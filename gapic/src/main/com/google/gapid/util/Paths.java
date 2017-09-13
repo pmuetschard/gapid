@@ -15,6 +15,8 @@
  */
 package com.google.gapid.util;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.google.common.primitives.UnsignedLongs;
 import com.google.gapid.image.Images;
 import com.google.gapid.models.ApiContext.FilteringContext;
@@ -24,12 +26,58 @@ import com.google.gapid.proto.service.Service;
 import com.google.gapid.proto.service.path.Path;
 import com.google.gapid.proto.service.vertex.Vertex;
 import com.google.gapid.views.Formatter;
+import com.google.protobuf.Descriptors.Descriptor;
+import com.google.protobuf.Descriptors.FieldDescriptor;
+import com.google.protobuf.Descriptors.OneofDescriptor;
+import com.google.protobuf.Message;
+import com.google.protobuf.MessageOrBuilder;
+
+import java.util.Map;
+import java.util.function.Function;
 
 /**
  * Path utilities.
  */
 public class Paths {
   private Paths() {
+  }
+
+  private static final ImmutableMap<Descriptor, Function<MessageOrBuilder, Object>> PARENT_LOOKUP;
+  static {
+    Map<Descriptor, Function<MessageOrBuilder, Object>> lookup = Maps.newIdentityHashMap();
+    for (Descriptor message : Path.getDescriptor().getMessageTypes()) {
+      String parent = message.getOptions().getExtension(Path.parent);
+      if (parent != null && !parent.isEmpty()) {
+        FieldDescriptor field = message.findFieldByName(parent);
+        if (field != null) {
+          lookup.put(message, fieldLookup(field));
+        } else {
+          for (OneofDescriptor oneof : message.getOneofs()) {
+            if (oneof.getName().equals(parent)) {
+              lookup.put(message, oneofLookup(oneof));
+              break;
+            }
+          }
+        }
+      }
+    }
+    PARENT_LOOKUP = ImmutableMap.copyOf(lookup);
+  }
+
+  private static Function<MessageOrBuilder, Object> fieldLookup(FieldDescriptor field) {
+    return m -> (m instanceof Message.Builder) ?
+        ((Message.Builder)m).getFieldBuilder(field) : m.getField(field);
+  }
+
+  private static Function<MessageOrBuilder, Object> oneofLookup(OneofDescriptor oneof) {
+    return m -> {
+      FieldDescriptor fd = m.getOneofFieldDescriptor(oneof);
+      if (fd == null) {
+        return null;
+      }
+      return (m instanceof Message.Builder) ?
+          ((Message.Builder)m).getFieldBuilder(fd) : m.getField(fd);
+    };
   }
 
   public static Path.Command command(Path.Capture capture, long index) {
@@ -223,6 +271,12 @@ public class Paths {
     return Path.Any.newBuilder().setStateTreeNode(node).build();
   }
 
+  public static MessageOrBuilder getParent(MessageOrBuilder path) {
+    Function<MessageOrBuilder, Object> lookup = PARENT_LOOKUP.get(path.getDescriptorForType());
+    Object result = (lookup == null) ? null : lookup.apply(path);
+    return (result instanceof MessageOrBuilder) ? (MessageOrBuilder)result : null;
+  }
+
   /**
    * Compares a and b, returning -1 if a comes before b, 1 if b comes before a and 0 if they
    * are equal.
@@ -247,168 +301,24 @@ public class Paths {
   }
 
   public static Path.State findState(Path.Any path) {
-    switch (path.getPathCase()) {
-      case STATE:
-        return path.getState();
-      case FIELD:
-        return findState(path.getField());
-      case ARRAY_INDEX:
-        return findState(path.getArrayIndex());
-      case SLICE:
-        return findState(path.getSlice());
-      case MAP_INDEX:
-        return findState(path.getMapIndex());
-      default:
-        return null;
+    for (MessageOrBuilder msg = getParent(path); msg != null; msg = getParent(msg)) {
+      if (msg instanceof Path.State) {
+        return (Path.State)msg;
+      }
     }
+    return null;
   }
 
-  public static Path.State findState(Path.Field path) {
-    switch (path.getStructCase()) {
-      case STATE:
-        return path.getState();
-      case FIELD:
-        return findState(path.getField());
-      case ARRAY_INDEX:
-        return findState(path.getArrayIndex());
-      case SLICE:
-        return findState(path.getSlice());
-      case MAP_INDEX:
-        return findState(path.getMapIndex());
-      default:
-        return null;
-    }
-  }
-
-  public static Path.State findState(Path.ArrayIndex path) {
-    switch (path.getArrayCase()) {
-      case FIELD:
-        return findState(path.getField());
-      case ARRAY_INDEX:
-        return findState(path.getArrayIndex());
-      case SLICE:
-        return findState(path.getSlice());
-      case MAP_INDEX:
-        return findState(path.getMapIndex());
-      default:
-        return null;
-    }
-  }
-
-  public static Path.State findState(Path.Slice path) {
-    switch (path.getArrayCase()) {
-      case FIELD:
-        return findState(path.getField());
-      case ARRAY_INDEX:
-        return findState(path.getArrayIndex());
-      case SLICE:
-        return findState(path.getSlice());
-      case MAP_INDEX:
-        return findState(path.getMapIndex());
-      default:
-        return null;
-    }
-  }
-
-  public static Path.State findState(Path.MapIndex path) {
-    switch (path.getMapCase()) {
-      case STATE:
-        return path.getState();
-      case FIELD:
-        return findState(path.getField());
-      case ARRAY_INDEX:
-        return findState(path.getArrayIndex());
-      case SLICE:
-        return findState(path.getSlice());
-      case MAP_INDEX:
-        return findState(path.getMapIndex());
-      default:
-        return null;
-    }
-  }
-
-  public static Path.Any reparent(Path.Any path, Path.State newState) {
+  public static Path.Any reparent(Path.Any path, Message newAncestor) {
     Path.Any.Builder builder = path.toBuilder();
-    switch (path.getPathCase()) {
-      case STATE:
-        return builder.setState(newState).build();
-      case FIELD:
-        return reparent(builder.getFieldBuilder(), newState) ? builder.build() : null;
-      case ARRAY_INDEX:
-        return reparent(builder.getArrayIndexBuilder(), newState) ? builder.build() : null;
-      case SLICE:
-        return reparent(builder.getSliceBuilder(), newState) ? builder.build() : null;
-      case MAP_INDEX:
-        return reparent(builder.getMapIndexBuilder(), newState) ? builder.build() : null;
-      default:
-        return null;
+    Descriptor targetType = newAncestor.getDescriptorForType();
+    for (MessageOrBuilder p = getParent(builder); p != null; p = getParent(p)) {
+      if (p.getDescriptorForType() == targetType) {
+        ((Message.Builder)p).clear().mergeFrom(newAncestor);
+        return builder.build();
+      }
     }
-  }
-
-  public static boolean reparent(Path.Field.Builder path, Path.State newState) {
-    switch (path.getStructCase()) {
-      case STATE:
-        path.setState(newState);
-        return true;
-      case FIELD:
-        return reparent(path.getFieldBuilder(), newState);
-      case ARRAY_INDEX:
-        return reparent(path.getArrayIndexBuilder(), newState);
-      case SLICE:
-        return reparent(path.getSliceBuilder(), newState);
-      case MAP_INDEX:
-        return reparent(path.getMapIndexBuilder(), newState);
-      default:
-        return false;
-    }
-  }
-
-  public static boolean reparent(Path.ArrayIndex.Builder path, Path.State newState) {
-    switch (path.getArrayCase()) {
-      case FIELD:
-        return reparent(path.getFieldBuilder(), newState);
-      case ARRAY_INDEX:
-        return reparent(path.getArrayIndexBuilder(), newState);
-      case SLICE:
-        return reparent(path.getSliceBuilder(), newState);
-      case MAP_INDEX:
-        return reparent(path.getMapIndexBuilder(), newState);
-      default:
-        return false;
-    }
-  }
-
-  public static boolean reparent(Path.Slice.Builder path, Path.State newState) {
-    switch (path.getArrayCase()) {
-      case FIELD:
-        return reparent(path.getFieldBuilder(), newState);
-      case ARRAY_INDEX:
-        return reparent(path.getArrayIndexBuilder(), newState);
-      case SLICE:
-        return reparent(path.getSliceBuilder(), newState);
-      case MAP_INDEX:
-        return reparent(path.getMapIndexBuilder(), newState);
-      default:
-        return false;
-    }
-  }
-
-  public static boolean reparent(Path.MapIndex.Builder path, Path.State newState) {
-    switch (path.getMapCase()) {
-      case STATE:
-        path.setState(newState);
-        return true;
-      case FIELD:
-        return reparent(path.getFieldBuilder(), newState);
-      case ARRAY_INDEX:
-        return reparent(path.getArrayIndexBuilder(), newState);
-      case SLICE:
-        return reparent(path.getSliceBuilder(), newState);
-      case MAP_INDEX:
-        return reparent(path.getMapIndexBuilder(), newState);
-      default:
-        return false;
-    }
+    return null;
   }
 
   public static String toString(Path.ID id) {
