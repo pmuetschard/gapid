@@ -17,13 +17,19 @@ syntax = "proto3";
 import "core/image/image.proto";
 import "gapis/service/box/box.proto";
 import "gapis/vertex/vertex.proto";
+import "google/protobuf/descriptor.proto";
 
 package path;
 option java_package = "com.google.gapid.proto.service.path";
 option java_outer_classname = "Path";
 
+extend google.protobuf.MessageOptions {
+  string parent = 64917;
+}
+
 // Any is a oneof union of all the path types.
 message Any {
+  option (parent) = "path";
   oneof path {
     API api = 1;
     ArrayIndex array_index = 2;
@@ -67,6 +73,7 @@ message ID {
 
 // ArrayIndex is path to a element in an array or slice.
 message ArrayIndex {
+    option (parent) = "array";
     uint64 index = 1;
     oneof array {
         Field field = 2;
@@ -85,6 +92,7 @@ message API {
 
 // As casts or transforms the object to the requested type.
 message As {
+    option (parent) = "from";
     oneof to {
         image.Format image_format = 1;
         vertex.BufferFormat vertex_buffer_format = 2;
@@ -115,6 +123,7 @@ message Capture {
 // Command is the path to a command in the capture.
 // Resolves to a service.Command.
 message Command {
+    option (parent) = "capture";
     Capture capture = 1;
     // Indices of this command in the capture.
     // If there is more than one index, then the index refers to a sub-command.
@@ -124,6 +133,7 @@ message Command {
 // Commands is a path to a list of commands in a capture.
 // Resolves to a service.Commands.
 message Commands {
+    option (parent) = "capture";
     Capture capture = 1;
     // The index of the first command in the interval.
     // If there is more than one index, then the index refers to a sub-command.
@@ -136,6 +146,7 @@ message Commands {
 // ConstantSet is a path to an enumerator of constants.
 // Resolves to a service.ConstantSet.
 message ConstantSet {
+    option (parent) = "api";
     API api = 1;
     uint32 index = 2;
 }
@@ -143,6 +154,7 @@ message ConstantSet {
 // Events is a path to a list of events in a capture.
 // Resolves to a service.Events.
 message Events {
+    option (parent) = "capture";
     Capture capture = 1;
     CommandFilter filter = 2;
     bool draw_calls = 3;
@@ -159,33 +171,39 @@ message Events {
 
 // Parameter is the path to a single parameter on a command.
 message Parameter {
+    option (parent) = "command";
     string name = 1;
     Command command = 2;
 }
 
 // Result is the path to the result value of a command.
 message Result {
+    option (parent) = "command";
     Command command = 1;
 }
 
 // Threads is path to a list of threads in a capture.
 message Threads {
+    option (parent) = "capture";
     Capture capture = 1;
 }
 
 // Thread is a path to a single thread in a capture.
 message Thread {
+    option (parent) = "capture";
     Capture capture = 1;
     uint64 id = 2;
 }
 
 // Contexts is path to a list of contexts in a capture.
 message Contexts {
+    option (parent) = "capture";
     Capture capture = 1;
 }
 
 // Context is a path to a single context in a capture.
 message Context {
+    option (parent) = "capture";
     Capture capture = 1;
     ID id = 2;
 }
@@ -198,11 +216,13 @@ message Device {
 // FramebufferObservation is a path to a framebuffer observation image at the
 // specified command. It resolves to an image.Info.
 message FramebufferObservation {
+    option (parent) = "command";
     Command command = 1;
 }
 
 // Field is a path to a field in a struct.
 message Field {
+    option (parent) = "struct";
     string name = 1;
     oneof struct {
         Field field = 2;
@@ -225,6 +245,7 @@ message CommandFilter {
 // CommandTree is a path to a hierarchy of command tree nodes.
 // Resolves to a service.CommandTree.
 message CommandTree {
+    option (parent) = "capture";
     // The capture to get the tree for.
     Capture capture = 1;
     // The command filter used to create the tree.
@@ -284,6 +305,7 @@ message ImageInfo {
 
 // MapIndex is a path to a value held inside a map.
 message MapIndex {
+    option (parent) = "map";
     oneof key {
         box.Value box = 1;
     }
@@ -300,6 +322,7 @@ message MapIndex {
 // Memory is a path to a region of memory.
 // Resolves to a service.Memory.
 message Memory {
+    option (parent) = "after";
     // Base address of the region of memory.
     uint64 address = 1;
     // Size in bytes of the region of memory.
@@ -318,6 +341,7 @@ message Memory {
 
 // Mesh is a path to a mesh representation of an object.
 message Mesh {
+    option (parent) = "object";
     MeshOptions options = 1;
     oneof object {
         Command command = 2;
@@ -332,6 +356,7 @@ message MeshOptions {
 
 // Report is a path to a list of report items for a capture.
 message Report {
+    option (parent) = "capture";
     Capture capture = 1;
     // The optional path the the device used to generate replay information.
     Device device = 2;
@@ -341,18 +366,21 @@ message Report {
 
 // Resources is a path to a list of resources used in a capture.
 message Resources {
+    option (parent) = "capture";
     Capture capture = 1;
 }
 
 // ResourceData is a path to a single resource snapshot at a given point in an
 // command stream.
 message ResourceData {
+    option (parent) = "after";
     ID id = 1;
     Command after = 2;
 }
 
 // Slice is a path to a subslice of a slice or array.
 message Slice {
+    option (parent) = "array";
     uint64 start = 1;
     uint64 end = 2;
     oneof array {
@@ -366,12 +394,14 @@ message Slice {
 
 // State is a path to the state at a point in a capture.
 message State {
+    option (parent) = "after";
     Command after = 1;
 }
 
 // StateTree is a path to a hierarchy of state tree nodes.
 // Resolves to a service.StateTree.
 message StateTree {
+    option (parent) = "after";
     Command after = 1;
     // If positive, expanded arrays/slices with more elements than this limit
     // will be restructured to have up to two extra levels of tree nodes, each
@@ -403,6 +433,7 @@ message StateTreeNodeForPath {
 
 // Thumbnail is a path to a thumbnail image representing the object.
 message Thumbnail {
+    option (parent) = "object";
     // The desired maximum width of the thumbnail image.
     // If DesiredMaxWidth <= 0, then no limits will be placed on the width.
     uint32 desired_max_width = 1;

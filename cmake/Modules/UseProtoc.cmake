@@ -194,7 +194,7 @@ function(_do_protoc_go go_package src_dir protos)
 
     _do_protoc("go" "${proto_path}" "${src_dir}" "${protos}" "${outputs}"
         "--plugin=${os_plugin}"
-        "--go_out=${IMPORTMAP},plugins=grpc:${os_go_out}")
+        "--go_out=${IMPORTMAP},Mgoogle/protobuf/descriptor.proto=github.com/golang/protobuf/protoc-gen-go/descriptor,plugins=grpc:${os_go_out}")
 endfunction()
 
 function(protoc_cc cc_package src_dir protos)
