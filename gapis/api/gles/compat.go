@@ -442,6 +442,18 @@ func compat(ctx context.Context, device *device.Instance, onError onCompatError)
 			tmpPtrToSrc.Free()
 			tmpSrc.Free()
 
+		case *GlGetUniformLocation:
+			// GlLinkProgram compat below queries all uniforms to establish the mapping.
+			// Thus these commands are not reqiured in the replay.
+			cmd.Mutate(ctx, id, s, nil /* no builder, just mutate */)
+			return
+
+		case *GlGetAttribLocation:
+			// Attribute locations are not remapped (see custom_replay.go).
+			// Thus these commands are not reqiured in the replay.
+			cmd.Mutate(ctx, id, s, nil /* no builder, just mutate */)
+			return
+
 		// TODO: glVertexAttribIPointer
 		case *GlVertexAttribPointer:
 			if cmd.Type == GLenum_GL_HALF_FLOAT_OES && target.vertexHalfFloatOES == unsupported {
