@@ -42,7 +42,7 @@ public class DeviceInfoService extends GapidService {
      * connected socket, the socket is closed and the service stops listening on
      * {@link #EXTRA_SOCKET_NAME}.
      */
-    private static final String ACTION_SEND_DEVICE_INFO = "com.google.android.gapid.action.SEND_DEV_INFO";
+    public static final String ACTION_SEND_DEVICE_INFO = "com.google.android.gapid.action.SEND_DEV_INFO";
 
     /**
      * Optional parameter for {@link #ACTION_SEND_DEVICE_INFO} that changes the local-abstract port

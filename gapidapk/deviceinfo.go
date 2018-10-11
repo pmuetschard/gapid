@@ -30,8 +30,8 @@ import (
 )
 
 const (
-	sendDevInfoAction     = "com.google.android.gapid.action.SEND_DEV_INFO"
-	sendDevInfoService    = "com.google.android.gapid.DeviceInfoService"
+	sendDevInfoAction     = "android.intent.action.MAIN"
+	sendDevInfoService    = "com.google.android.gapid.DeviceInfoActivity"
 	sendDevInfoPort       = "gapid-devinfo"
 	startServiceAttempts  = 3
 	portListeningAttempts = 5
@@ -60,7 +60,7 @@ func startDevInfoService(ctx context.Context, d adb.Device, apk *APK) error {
 	ctx = log.Enter(ctx, "startDevInfoService")
 	var listening bool
 
-	action := apk.ServiceActions.FindByName(sendDevInfoAction, sendDevInfoService)
+	action := apk.ActivityActions.FindByName(sendDevInfoAction, sendDevInfoService)
 	if action == nil {
 		return log.Err(ctx, nil, "Service intent was not found")
 	}
@@ -69,7 +69,7 @@ func startDevInfoService(ctx context.Context, d adb.Device, apk *APK) error {
 	err := task.Retry(ctx, startServiceAttempts, 100*time.Millisecond,
 		func(ctx context.Context) (bool, error) {
 			log.I(ctx, "Attempt to start service: %s", sendDevInfoService)
-			if err := d.StartService(ctx, *action); err != nil {
+			if err := d.StartActivity(ctx, *action); err != nil {
 				return false, err
 			}
 			err := task.Retry(ctx, portListeningAttempts, time.Second, func(

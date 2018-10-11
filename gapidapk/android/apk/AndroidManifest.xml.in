@@ -39,6 +39,16 @@
                 <action android:name=".gapir"/>
             </intent-filter>
         </activity>
+        <activity android:name="com.google.android.gapid.DeviceInfoActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+            </intent-filter>
+        </activity>
+        <activity android:name="com.google.android.gapid.PackageInfoActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+            </intent-filter>
+        </activity>
         <service
             android:name="com.google.android.gapid.DeviceInfoService"
             android:exported="true">

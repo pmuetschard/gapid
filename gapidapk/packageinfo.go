@@ -25,8 +25,8 @@ import (
 )
 
 const (
-	sendPkgInfoAction                = "com.google.android.gapid.action.SEND_PKG_INFO"
-	sendPkgInfoService               = "com.google.android.gapid.PackageInfoService"
+	sendPkgInfoAction                = "android.intent.action.MAIN"
+	sendPkgInfoService               = "com.google.android.gapid.PackageInfoActivity"
 	sendPkgInfoOnlyDebugExtra        = "com.google.android.gapid.extra.ONLY_DEBUG"
 	sendPkgInfoIncludeIconsExtra     = "com.google.android.gapid.extra.INCLUDE_ICONS"
 	sendPkgInfoIconDensityScaleExtra = "com.google.android.gapid.extra.ICON_DENSITY_SCALE"
@@ -41,7 +41,7 @@ func PackageList(ctx context.Context, d adb.Device, includeIcons bool, iconDensi
 	}
 
 	log.D(ctx, "Looking for service action...")
-	action := apk.ServiceActions.FindByName(sendPkgInfoAction, sendPkgInfoService)
+	action := apk.ActivityActions.FindByName(sendPkgInfoAction, sendPkgInfoService)
 	if action == nil {
 		return nil, log.Err(ctx, nil, "Service intent was not found")
 	}
@@ -49,7 +49,7 @@ func PackageList(ctx context.Context, d adb.Device, includeIcons bool, iconDensi
 	onlyDebug := d.Root(ctx) == adb.ErrDeviceNotRooted
 
 	log.D(ctx, "Starting service...")
-	if err := d.StartService(ctx, *action,
+	if err := d.StartActivity(ctx, *action,
 		android.BoolExtra{Key: sendPkgInfoOnlyDebugExtra, Value: onlyDebug},
 		android.BoolExtra{Key: sendPkgInfoIncludeIconsExtra, Value: includeIcons},
 		android.FloatExtra{Key: sendPkgInfoIconDensityScaleExtra, Value: iconDensityScale},
