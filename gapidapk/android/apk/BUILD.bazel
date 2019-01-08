@@ -24,6 +24,7 @@ _NATIVE_LIBRARIES = {
     "VkLayer_GraphicsSpy": "//gapii/apk",
     "gapir": "//cmd/gapir/apk",
     "vulkan_sample": "//cmd/vulkan_sample/apk",
+    "GLTimerLayer": "//core/gles/timer_layer/apk",
 }
 
 _NATIVE_BINARIES = {
