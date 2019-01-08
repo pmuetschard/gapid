@@ -21,6 +21,7 @@ _NATIVE_LIBRARIES = {
     "interceptor": "//gapii/apk",
     "VkLayerGraphicsSpy": "//gapii/apk",
     "gapir": "//cmd/gapir/apk",
+    "GLTimerLayer": "//core/gles/timer_layer/apk",
 }
 
 gapid_apk(
