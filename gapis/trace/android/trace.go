@@ -36,6 +36,7 @@ import (
 	"github.com/google/gapid/gapidapk"
 	"github.com/google/gapid/gapidapk/pkginfo"
 	gapii "github.com/google/gapid/gapii/client"
+	"github.com/google/gapid/gapis/perfetto"
 	"github.com/google/gapid/gapis/service"
 	"github.com/google/gapid/gapis/trace/tracer"
 )
@@ -95,13 +96,15 @@ func NewTracer(dev bind.Device) tracer.Tracer {
 
 // TraceConfiguration returns the device's supported trace configuration.
 func (t *androidTracer) TraceConfiguration(ctx context.Context) (*service.DeviceTraceConfiguration, error) {
-	apis := make([]*service.DeviceAPITraceConfiguration, 0, 2)
+	apis := make([]*service.TraceTypeCapabilities, 0, 3)
 	if t.b.Instance().GetConfiguration().GetDrivers().GetOpengl().GetVersion() != "" {
 		apis = append(apis, tracer.GLESTraceOptions())
 	}
 	if len(t.b.Instance().GetConfiguration().GetDrivers().GetVulkan().GetPhysicalDevices()) > 0 {
 		apis = append(apis, tracer.VulkanTraceOptions())
 	}
+	// TODO: DO NOT SUBMIT: check the API version
+	apis = append(apis, tracer.PerfettoTraceOptions())
 
 	return &service.DeviceTraceConfiguration{
 		Apis:                 apis,
@@ -447,28 +450,30 @@ func (t *androidTracer) SetupTrace(ctx context.Context, o *service.TraceOptions)
 				match[1], match[3],
 				strings.Join(lines, "\n  "))
 		}
-	} else {
+	} else if o.Type != service.TraceType_Perfetto || len(o.GetUri()) != 0 {
 		return ret, nil, fmt.Errorf("Could not find package matching %s", o.GetUri())
 	}
 
-	if !pkg.Debuggable {
-		err = t.b.Root(ctx)
-		switch err {
-		case nil:
-		case adb.ErrDeviceNotRooted:
-			cleanup()
-			return ret, nil, err
-		default:
-			cleanup()
-			return ret, nil, fmt.Errorf("Failed to restart ADB as root: %v", err)
+	if pkg != nil {
+		if !pkg.Debuggable {
+			err = t.b.Root(ctx)
+			switch err {
+			case nil:
+			case adb.ErrDeviceNotRooted:
+				cleanup()
+				return ret, nil, err
+			default:
+				cleanup()
+				return ret, nil, fmt.Errorf("Failed to restart ADB as root: %v", err)
+			}
+			log.I(ctx, "Device is rooted")
 		}
-		log.I(ctx, "Device is rooted")
-	}
 
-	if o.ClearCache {
-		log.I(ctx, "Clearing package cache")
-		if err := pkg.ClearCache(ctx); err != nil {
-			return ret, nil, err
+		if o.ClearCache {
+			log.I(ctx, "Clearing package cache")
+			if err := pkg.ClearCache(ctx); err != nil {
+				return ret, nil, err
+			}
 		}
 	}
 
@@ -479,8 +484,14 @@ func (t *androidTracer) SetupTrace(ctx context.Context, o *service.TraceOptions)
 			t.b.TurnScreenOff(ctx)
 		}
 	}
-	log.I(ctx, "Starting with options %+v", tracer.GapiiOptions(o))
-	process, err := gapii.Start(ctx, pkg, a, tracer.GapiiOptions(o))
+
+	var process tracer.Process
+	if o.Type == service.TraceType_Perfetto {
+		process, err = perfetto.Start(ctx, t.b, a, o)
+	} else {
+		log.I(ctx, "Starting with options %+v", tracer.GapiiOptions(o))
+		process, err = gapii.Start(ctx, pkg, a, tracer.GapiiOptions(o))
+	}
 	if err != nil {
 		cleanup()
 		return ret, nil, err

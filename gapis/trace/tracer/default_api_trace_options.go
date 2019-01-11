@@ -19,21 +19,34 @@ import (
 )
 
 // VulkanTraceOptions returns the default trace options for Vulkan.
-func VulkanTraceOptions() *service.DeviceAPITraceConfiguration {
-	return &service.DeviceAPITraceConfiguration{
+func VulkanTraceOptions() *service.TraceTypeCapabilities {
+	return &service.TraceTypeCapabilities{
 		Api:                            "Vulkan",
 		CanDisablePcs:                  false,
 		MidExecutionCaptureSupport:     service.FeatureStatus_Supported,
 		CanEnableUnsupportedExtensions: true,
+		RequiresApplication:            true,
 	}
 }
 
 // GLESTraceOptions returns the default trace options for GLES.
-func GLESTraceOptions() *service.DeviceAPITraceConfiguration {
-	return &service.DeviceAPITraceConfiguration{
+func GLESTraceOptions() *service.TraceTypeCapabilities {
+	return &service.TraceTypeCapabilities{
 		Api:                            "OpenGLES",
 		CanDisablePcs:                  true,
 		MidExecutionCaptureSupport:     service.FeatureStatus_Experimental,
 		CanEnableUnsupportedExtensions: false,
+		RequiresApplication:            true,
+	}
+}
+
+// PerfettoTraceOptions returns the default trace options for Perfetto.
+func PerfettoTraceOptions() *service.TraceTypeCapabilities {
+	return &service.TraceTypeCapabilities{
+		Type:                           service.TraceType_Perfetto,
+		CanDisablePcs:                  false,
+		MidExecutionCaptureSupport:     service.FeatureStatus_Supported,
+		CanEnableUnsupportedExtensions: false,
+		RequiresApplication:            false,
 	}
 }

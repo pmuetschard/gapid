@@ -39,9 +39,9 @@ import com.google.gapid.models.Settings;
 import com.google.gapid.models.TraceTargets;
 import com.google.gapid.proto.service.Service;
 import com.google.gapid.proto.service.Service.ClientAction;
-import com.google.gapid.proto.service.Service.DeviceAPITraceConfiguration;
 import com.google.gapid.proto.service.Service.DeviceTraceConfiguration;
 import com.google.gapid.proto.service.Service.StatusResponse;
+import com.google.gapid.proto.service.Service.TraceTypeCapabilities;
 import com.google.gapid.server.Client;
 import com.google.gapid.server.Tracer;
 import com.google.gapid.server.Tracer.TraceRequest;
@@ -277,7 +277,7 @@ public class TracerDialog {
 
         deviceComposite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
 
-        createLabel(this, "API:");
+        createLabel(this, "Type:");
         api = createApiDropDown(this);
         api.getCombo().setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
 
@@ -388,7 +388,7 @@ public class TracerDialog {
         api.getCombo().addListener(SWT.Selection, e -> update(models.settings, getSelectedApi()));
 
         Listener mecListener = e -> {
-          DeviceAPITraceConfiguration config = getSelectedApi();
+          TraceTypeCapabilities config = getSelectedApi();
           if (fromBeginning.getSelection() || config == null ||
               config.getMidExecutionCaptureSupport() != Service.FeatureStatus.Experimental) {
             fromBeginning.setText(MEC_LABEL);
@@ -435,7 +435,12 @@ public class TracerDialog {
         combo.setLabelProvider(new LabelProvider() {
           @Override
           public String getText(Object element) {
-            return ((DeviceAPITraceConfiguration)element).getApi();
+            TraceTypeCapabilities ttc = (TraceTypeCapabilities)element;
+            switch (ttc.getType()) {
+              case Graphics: return ttc.getApi();
+              case Perfetto: return "Perfetto";
+              default: throw new AssertionError();
+            }
           }
         });
         return combo;
@@ -450,7 +455,7 @@ public class TracerDialog {
         updateApiDropdown(config, settings);
       }
 
-      private void update(Settings settings, DeviceAPITraceConfiguration config) {
+      private void update(Settings settings, TraceTypeCapabilities config) {
         boolean pcs = config != null && config.getCanDisablePcs();
         disablePcs.setEnabled(pcs);
         disablePcs.setSelection(pcs && settings.traceDisablePcs);
@@ -486,8 +491,8 @@ public class TracerDialog {
       private void updateApiDropdown(DeviceTraceConfiguration config, Settings settings) {
         if (api != null && config != null) {
           api.setInput(config.getApisList());
-          DeviceAPITraceConfiguration deflt = config.getApis(0);
-          for (DeviceAPITraceConfiguration c : config.getApisList()) {
+          TraceTypeCapabilities deflt = config.getApis(0);
+          for (TraceTypeCapabilities c : config.getApisList()) {
             if (c.getApi().equals(settings.traceApi)) {
               deflt = c;
               break;
@@ -548,9 +553,10 @@ public class TracerDialog {
       }
 
       public boolean isReady() {
-        return getSelectedDevice() != null && getSelectedApi() != null &&
-            !traceTarget.getText().isEmpty() && !directory.getText().isEmpty() &&
-            !file.getText().isEmpty();
+        TraceTypeCapabilities config = getSelectedApi();
+        return getSelectedDevice() != null && config != null &&
+            (!config.getRequiresApplication() || !traceTarget.getText().isEmpty()) &&
+            !directory.getText().isEmpty() && !file.getText().isEmpty();
       }
 
       public void addModifyListener(Listener listener) {
@@ -568,7 +574,7 @@ public class TracerDialog {
 
       public TraceRequest getTraceRequest(Settings settings) {
         DeviceCaptureInfo dev = devices.get(device.getCombo().getSelectionIndex());
-        DeviceAPITraceConfiguration config = getSelectedApi();
+        TraceTypeCapabilities config = getSelectedApi();
         File output = getOutputFile();
 
         settings.traceDevice = dev.device.getSerial();
@@ -583,6 +589,7 @@ public class TracerDialog {
 
         Service.TraceOptions.Builder options = Service.TraceOptions.newBuilder()
             .setDevice(dev.path)
+            .setType(config.getType())
             .addApis(config.getApi())
             .setUri(traceTarget.getText())
             .setAdditionalCommandLineArgs(arguments.getText())
@@ -649,9 +656,9 @@ public class TracerDialog {
         return sel.isEmpty() ? null : (DeviceCaptureInfo)sel.getFirstElement();
       }
 
-      protected DeviceAPITraceConfiguration getSelectedApi() {
+      protected TraceTypeCapabilities getSelectedApi() {
         IStructuredSelection sel = api.getStructuredSelection();
-        return sel.isEmpty() ? null : ((DeviceAPITraceConfiguration)sel.getFirstElement());
+        return sel.isEmpty() ? null : ((TraceTypeCapabilities)sel.getFirstElement());
       }
 
       private File getOutputFile() {
