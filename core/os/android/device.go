@@ -19,6 +19,9 @@ import (
 	"fmt"
 	"time"
 
+	"perfetto_pb"
+
+	"github.com/google/gapid/core/event/task"
 	"github.com/google/gapid/core/log"
 	"github.com/google/gapid/core/os/device"
 	"github.com/google/gapid/core/os/device/bind"
@@ -83,6 +86,8 @@ type Device interface {
 	SystemProperty(ctx context.Context, name string) (string, error)
 	// SetSystemProperty sets the system property with the given string value
 	SetSystemProperty(ctx context.Context, name, value string) error
+	// StartPerfettoTrace starts a perfetto trace.
+	StartPerfettoTrace(ctx context.Context, config *perfetto_pb.TraceConfig, out string, stop task.Signal) error
 }
 
 // LogcatMessage represents a single logcat message.
