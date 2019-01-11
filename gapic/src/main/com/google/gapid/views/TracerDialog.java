@@ -223,7 +223,12 @@ public class TracerDialog {
     private static class TraceInput extends Composite {
       private static final String DEFAULT_TRACE_FILE = "trace";
       private static final String TRACE_EXTENSION = ".gfxtrace";
+      private static final String PERFETTO_EXTENSION = ".perfetto";
       private static final DateFormat TRACE_DATE_FORMAT = new SimpleDateFormat("_yyyyMMdd_HHmm");
+      private static final String FRAMES_LABEL = "Stop After:";
+      private static final String DURATION_LABEL = "Duration:";
+      private static final String FRAMES_UNIT = "Frames (0 for unlimited)";
+      private static final String DURATION_UNIT = "Seconds (0 for unlimited)";
       protected static final String MEC_LABEL = "Trace From Beginning";
       private static final String MEC_LABEL_WARNING =
           "Trace From Beginning (mid-execution capture for %s is experimental)";
@@ -239,7 +244,9 @@ public class TracerDialog {
       private final Text arguments;
       private final Text cwd;
       private final Text envVars;
+      private final Label frameCountLabel;
       private final Spinner frameCount;
+      private final Label frameCountUnit;
       private final Button fromBeginning;
       private final Button withoutBuffering;
       private final Button hideUnknownExtensions;
@@ -319,13 +326,13 @@ public class TracerDialog {
             new GridData(SWT.FILL, SWT.FILL, true, false));
         envVars.setEnabled(false);
 
-        createLabel(this, "Stop After:");
+        frameCountLabel = createLabel(this, FRAMES_LABEL);
         Composite frameCountComposite =
             createComposite(this, withMargin(new GridLayout(2, false), 0, 0));
         frameCount = withLayoutData(
             createSpinner(frameCountComposite, models.settings.traceFrameCount, 0, 999999),
             new GridData(SWT.LEFT, SWT.FILL, false, false));
-        createLabel(frameCountComposite, "Frames (0 for unlimited)");
+        frameCountUnit = createLabel(frameCountComposite, FRAMES_UNIT);
 
         createLabel(this, "");
         fromBeginning = withLayoutData(
@@ -468,6 +475,17 @@ public class TracerDialog {
         boolean ext = config != null && config.getCanEnableUnsupportedExtensions();
         hideUnknownExtensions.setEnabled(ext);
         hideUnknownExtensions.setSelection(!ext || settings.traceHideUnknownExtensions);
+
+        boolean isPerfetto = config.getType() == Service.TraceType.Perfetto;
+        withoutBuffering.setEnabled(!isPerfetto);
+        withoutBuffering.setSelection(!isPerfetto && settings.traceWithoutBuffering);
+        frameCountLabel.setText(isPerfetto ? DURATION_LABEL : FRAMES_LABEL);
+        frameCountUnit.setText(isPerfetto ? DURATION_UNIT : FRAMES_UNIT);
+
+        if (!userHasChangedOutputFile) {
+          file.setText(formatTraceName(friendlyName));
+          userHasChangedOutputFile = false; // cancel the modify event from set call.
+        }
       }
 
       private void updateDevicesDropDown(Settings settings) {
@@ -549,7 +567,10 @@ public class TracerDialog {
       }
 
       protected String formatTraceName(String name) {
-        return (name.isEmpty() ? DEFAULT_TRACE_FILE : name) + date + TRACE_EXTENSION;
+        TraceTypeCapabilities config = getSelectedApi();
+        String ext = config != null && config.getType() == Service.TraceType.Perfetto ?
+            PERFETTO_EXTENSION : TRACE_EXTENSION;
+        return (name.isEmpty() ? DEFAULT_TRACE_FILE : name) + date + ext;
       }
 
       public boolean isReady() {
