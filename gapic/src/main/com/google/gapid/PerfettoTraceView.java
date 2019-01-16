@@ -17,22 +17,34 @@ package com.google.gapid;
 
 import com.google.gapid.models.Models;
 import com.google.gapid.perfetto.QueryViewer;
+import com.google.gapid.perfetto.TraceView;
 import com.google.gapid.server.Client;
+import com.google.gapid.views.StatusBar;
 import com.google.gapid.widgets.Widgets;
 
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.TabFolder;
+import org.eclipse.swt.widgets.TabItem;
 
 /**
  * Main view shown when a Perfetto trace is loaded.
  */
 public class PerfettoTraceView extends Composite implements MainWindow.MainView {
-  public PerfettoTraceView(Composite parent, Client client, Models models, Widgets widgets) {
+  public PerfettoTraceView(Composite parent, StatusBar status, Client client, Models models, Widgets widgets) {
     super(parent, SWT.NONE);
     setLayout(new FillLayout());
-    new QueryViewer(this, client, models);
+    TabFolder folder = new TabFolder(this, SWT.TOP);
+    TabItem main = new TabItem(folder, SWT.NONE);
+    main.setText("Perfetto");
+    main.setControl(TraceView.show(folder, status, client, models.capture, widgets.theme));
+
+    TabItem query = new TabItem(folder, SWT.NONE);
+    query.setText("Query");
+    query.setControl(new QueryViewer(folder, client, models));
+
   }
 
   @Override

@@ -144,6 +144,14 @@ public interface Theme {
   @Text(Text.Mono) public Font monoSpaceFont();
   @Text(Text.Big) public Font bigBoldFont();
 
+  // Perfetto
+  @Icon("perfetto_pin.png") public Image perfettoPin();
+  @Icon("perfetto_pinned.png") public Image perfettoPinned();
+  @Icon("perfetto_collapse.png") public Image perfettoCollapse();
+  @Icon("perfetto_collapse_hovered.png") public Image perfettoCollapseHovered();
+  @Icon("perfetto_expand.png") public Image perfettoExpand();
+  @Icon("perfetto_expand_hovered.png") public Image perfettoExpandHovered();
+
   public void dispose();
 
   public static Theme load(Display display) {

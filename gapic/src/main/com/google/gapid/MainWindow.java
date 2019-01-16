@@ -101,7 +101,7 @@ public class MainWindow extends ApplicationWindow {
     initMenus(client, models, widgets);
 
     LoadablePanel<MainViewContainer> mainUi = new LoadablePanel<MainViewContainer>(
-        mainArea, widgets, parent -> new MainViewContainer(parent, client, models, widgets));
+        mainArea, widgets, parent -> new MainViewContainer(parent, statusBar, client, models, widgets));
     models.capture.addListener(new Capture.Listener() {
       @Override
       public void onCaptureLoadingStart(boolean maintainState) {
@@ -353,6 +353,7 @@ public class MainWindow extends ApplicationWindow {
   }
 
   private static class MainViewContainer extends Composite {
+    private final StatusBar status;
     private final Client client;
     private final Models models;
     private final Widgets widgets;
@@ -360,8 +361,9 @@ public class MainWindow extends ApplicationWindow {
     private Service.TraceType current;
     private MainView view;
 
-    public MainViewContainer(Composite parent, Client client, Models models, Widgets widgets) {
+    public MainViewContainer(Composite parent, StatusBar status, Client client, Models models, Widgets widgets) {
       super(parent, SWT.NONE);
+      this.status = status; // TOOD: move to widgets
       this.client = client;
       this.models = models;
       this.widgets = widgets;
@@ -383,7 +385,7 @@ public class MainWindow extends ApplicationWindow {
           view = new GraphicsTraceView(this, models, widgets);
           break;
         case Perfetto:
-          view = new PerfettoTraceView(this, client, models, widgets);
+          view = new PerfettoTraceView(this, status, client, models, widgets);
           break;
         default:
           throw new AssertionError("Trace type not supported: " + traceType);
