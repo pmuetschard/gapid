@@ -44,6 +44,18 @@ public class Colors {
     return new RGB((int)(r * 255), (int)(g * 255), (int)(b * 255));
   }
 
+  public static RGB hsl(float h, float s, float l) {
+    l *= 2;
+    s *= (l <= 1) ? l : 2 - l;
+    return new RGB(h, (2 * s) / (l + s), (l + s) / 2);
+  }
+
+  public static RGBA hsla(float h, float s, float l, float a) {
+    l *= 2;
+    s *= (l <= 1) ? l : 2 - l;
+    return new RGBA(h, (2 * s) / (l + s), (l + s) / 2, a);
+  }
+
   public static RGB getRandomColor(int index) {
     float hue = (float)Math.toDegrees(index * GOLDEN_ANGLE) % 360;
     return new RGB(hue, 0.8f, 0.8f);
