@@ -264,7 +264,9 @@ func fromProto(ctx context.Context, r *Record) (Capture, error) {
 		return deserializeGFXTrace(ctx, r, in)
 	}
 
-	return nil, errors.New("Not a recognized capture format")
+	// TODO: The Perfetto trace file has no magic header, and we don't currently
+	// slap one on when tracing, so the files can be opened in Perfetto.
+	return deserializePerfettoTrace(ctx, r, in)
 }
 
 // wrapper wraps a Capture. This is needed because protoconv, which is used by
