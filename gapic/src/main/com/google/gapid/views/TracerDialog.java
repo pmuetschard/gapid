@@ -28,6 +28,7 @@ import static com.google.gapid.widgets.Widgets.withIndents;
 import static com.google.gapid.widgets.Widgets.withLayoutData;
 import static com.google.gapid.widgets.Widgets.withMargin;
 import static com.google.gapid.widgets.Widgets.withSpans;
+import static java.util.concurrent.TimeUnit.MINUTES;
 
 import com.google.common.collect.Lists;
 import com.google.gapid.models.Analytics;
@@ -82,12 +83,15 @@ import org.eclipse.swt.widgets.Text;
 import java.io.File;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
+
+import perfetto.protos.PerfettoConfig;
 
 /**
  * Dialogs used for capturing a trace.
@@ -638,6 +642,64 @@ public class TracerDialog {
         if (config.getCanDisablePcs()) {
           settings.traceDisablePcs = disablePcs.getSelection();
           options.setDisablePcs(disablePcs.getSelection());
+        }
+
+        if (config.getType() == Service.TraceType.Perfetto) {
+          int duration = frameCount.getSelection() * 1000;
+          options.setPerfettoConfig(PerfettoConfig.TraceConfig.newBuilder()
+              .setDurationMs((duration == 0) ? (int)MINUTES.toMillis(10) : duration)
+              .addBuffers(PerfettoConfig.TraceConfig.BufferConfig.newBuilder()
+                  .setSizeKb(131072))
+              .addDataSources(PerfettoConfig.TraceConfig.DataSource.newBuilder()
+                  .setConfig(PerfettoConfig.DataSourceConfig.newBuilder()
+                      .setName("linux.ftrace")
+                      .setFtraceConfig(PerfettoConfig.FtraceConfig.newBuilder()
+                          .addAllFtraceEvents(Arrays.asList(
+                              "ion_heap_grow",
+                              "ion_heap_shrink",
+                              "rss_stat",
+                              "oom_score_adj_update",
+                              "print",
+                              "sched_switch",
+                              "sched_process_exit",
+                              "task_newtask",
+                              "task_rename"))
+                          .addAllAtraceCategories(Arrays.asList(
+                              "am",
+                              "dalvik",
+                              "freq",
+                              "gfx",
+                              "idle",
+                              "sched",
+                              "view"))
+                          .setBufferSizeKb(8192))))
+              .addDataSources(PerfettoConfig.TraceConfig.DataSource.newBuilder()
+                  .setConfig(PerfettoConfig.DataSourceConfig.newBuilder()
+                      .setName("linux.process_stats")
+                      .setTargetBuffer(0)
+                      .setProcessStatsConfig(PerfettoConfig.ProcessStatsConfig.newBuilder()
+                          .setProcStatsPollMs(100)
+                          .setScanAllProcessesOnStart(true))))
+              .addDataSources(PerfettoConfig.TraceConfig.DataSource.newBuilder()
+                  .setConfig(PerfettoConfig.DataSourceConfig.newBuilder()
+                      .setName("linux.sys_stats")
+                      .setSysStatsConfig(PerfettoConfig.SysStatsConfig.newBuilder()
+                          .setMeminfoPeriodMs(50)
+                          .addAllMeminfoCounters(Arrays.asList(
+                              PerfettoConfig.MeminfoCounters.MEMINFO_MEM_AVAILABLE,
+                              PerfettoConfig.MeminfoCounters.MEMINFO_SWAP_CACHED,
+                              PerfettoConfig.MeminfoCounters.MEMINFO_ACTIVE,
+                              PerfettoConfig.MeminfoCounters.MEMINFO_INACTIVE)))))
+              .addDataSources(PerfettoConfig.TraceConfig.DataSource.newBuilder()
+                  .setConfig(PerfettoConfig.DataSourceConfig.newBuilder()
+                      .setName("android.power")
+                      .setAndroidPowerConfig(PerfettoConfig.AndroidPowerConfig.newBuilder()
+                          .setBatteryPollMs(1000)
+                          .addAllBatteryCounters(Arrays.asList(
+                              PerfettoConfig.AndroidPowerConfig.BatteryCounters.BATTERY_COUNTER_CAPACITY_PERCENT,
+                              PerfettoConfig.AndroidPowerConfig.BatteryCounters.BATTERY_COUNTER_CHARGE,
+                              PerfettoConfig.AndroidPowerConfig.BatteryCounters.BATTERY_COUNTER_CURRENT,
+                              PerfettoConfig.AndroidPowerConfig.BatteryCounters.BATTERY_COUNTER_CURRENT_AVG))))));
         }
 
         return new TraceRequest(output, options.build());
