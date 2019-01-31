@@ -298,7 +298,9 @@ type (
 		Max        struct {
 			Overdraw int `help:"the amount of overdraw to map to white in the output"`
 		}
-		DisplayToSurface bool `help:"display the frames rendered in the replay back to the surface"`
+		DisplayToSurface bool   `help:"display the frames rendered in the replay back to the surface"`
+		Perfetto         string `help:"path to a perfetto config to take a trace while replaying"`
+		PerfettoOut      string `help:"perfetto capture file (default 'replay.perfetto')"`
 		CommandFilterFlags
 		CaptureFileFlags
 	}

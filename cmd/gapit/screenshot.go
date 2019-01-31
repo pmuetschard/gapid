@@ -20,12 +20,20 @@ import (
 	"fmt"
 	"image"
 	"image/png"
+	"io"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
+	"perfetto_pb"
+
+	"github.com/golang/protobuf/proto"
 	"github.com/google/gapid/core/app"
 	"github.com/google/gapid/core/app/flags"
+	"github.com/google/gapid/core/event/task"
 	"github.com/google/gapid/core/log"
 	"github.com/google/gapid/gapis/api"
 	"github.com/google/gapid/gapis/service"
@@ -39,10 +47,11 @@ type screenshotVerb struct{ ScreenshotFlags }
 func init() {
 	verb := &screenshotVerb{
 		ScreenshotFlags{
-			At:    []flags.U64Slice{},
-			Frame: []int{},
-			Out:   "screenshot.png",
-			NoOpt: false,
+			At:          []flags.U64Slice{},
+			Frame:       []int{},
+			Out:         "screenshot.png",
+			NoOpt:       false,
+			PerfettoOut: "replay.perfetto",
 		},
 	}
 
@@ -82,6 +91,56 @@ func (verb *screenshotVerb) Run(ctx context.Context, flags flag.FlagSet) error {
 		}
 	}
 
+	var trace service.TraceHandler
+	if verb.Perfetto != "" {
+		cfgBytes, err := ioutil.ReadFile(verb.Perfetto)
+		if err != nil {
+			return err
+		}
+		var cfg perfetto_pb.TraceConfig
+		if err := proto.UnmarshalText(string(cfgBytes), &cfg); err != nil {
+			return err
+		}
+		perfettoOut, err := filepath.Abs(verb.PerfettoOut)
+		if err != nil {
+			return err
+		}
+
+		trace, err = client.Trace(ctx)
+		if err != nil {
+			return err
+		}
+		defer trace.Dispose(ctx)
+		defer app.AddInterruptHandler(func() {
+			trace.Dispose(ctx)
+		})()
+
+		status, err := trace.Initialize(ctx, &service.TraceOptions{
+			Device:              device,
+			Type:                service.TraceType_Perfetto,
+			ServerLocalSavePath: perfettoOut,
+			PerfettoConfig:      &cfg,
+		})
+		if err != nil {
+			return err
+		}
+		log.I(ctx, "Initialized perfetto capture, waiting for start: %v", status)
+		err = task.Retry(ctx, 0, time.Second, func(ctx context.Context) (retry bool, err error) {
+			status, err = trace.Event(ctx, service.TraceEvent_Status)
+			if err == io.EOF {
+				return true, nil
+			}
+			if err != nil {
+				return true, err
+			}
+			return status == nil || status.Status != service.TraceStatus_Initializing, nil
+		})
+		if err != nil {
+			return err
+		}
+		log.I(ctx, "Perfetto capture started: %v", status)
+	}
+
 	// Submit requests in parallel, so that gapis will batch them.
 	var wg sync.WaitGroup
 	c := make(chan error)
@@ -103,6 +162,24 @@ func (verb *screenshotVerb) Run(ctx context.Context, flags flag.FlagSet) error {
 		close(c)
 	}()
 	for err := range c {
+		if err != nil {
+			return err
+		}
+	}
+
+	if trace != nil {
+		log.I(ctx, "Stopping perfetto capture...")
+		trace.Event(ctx, service.TraceEvent_Stop)
+		err = task.Retry(ctx, 0, time.Second, func(ctx context.Context) (retry bool, err error) {
+			status, err := trace.Event(ctx, service.TraceEvent_Status)
+			if err == io.EOF {
+				return true, nil
+			}
+			if err != nil {
+				return true, err
+			}
+			return status == nil || status.Status == service.TraceStatus_Done, nil
+		})
 		if err != nil {
 			return err
 		}
