@@ -55,6 +55,7 @@ public abstract class GlCanvas extends Canvas {
         NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersion3_2Core,
         OS.NSOpenGLPFAColorSize, 24,
         OS.NSOpenGLPFADepthSize, 24,
+        OS.NSOpenGLPFAStencilSize, 8,
         OS.NSOpenGLPFASampleBuffers, 1,
         OS.NSOpenGLPFASamples, 4,
         OS.NSOpenGLPFADoubleBuffer,

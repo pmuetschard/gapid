@@ -127,6 +127,7 @@ public abstract class GlCanvas extends Canvas {
       set(attr, GLX.GLX_GREEN_SIZE, 8);
       set(attr, GLX.GLX_BLUE_SIZE, 8);
       set(attr, GLX.GLX_DEPTH_SIZE, 24);
+      set(attr, GLX.GLX_STENCIL_SIZE, 8);
       if (glxCaps.GLX14 || glxCaps.GLX_ARB_multisample) {
         set(attr, GLX14.GLX_SAMPLE_BUFFERS, 1);
         set(attr, GLX14.GLX_SAMPLES, 4);

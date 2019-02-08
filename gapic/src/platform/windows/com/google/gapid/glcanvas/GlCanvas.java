@@ -145,6 +145,7 @@ public abstract class GlCanvas extends Canvas {
       pfd.cGreenBits((byte)8);
       pfd.cBlueBits((byte)8);
       pfd.cDepthBits((byte)24);
+      pfd.cStencilBits((byte)8);
 
       pixelFormat = GDI32.ChoosePixelFormat(dc, pfd);
       if (pixelFormat == 0 || !GDI32.SetPixelFormat(dc, pixelFormat, pfd)) {
@@ -166,6 +167,7 @@ public abstract class GlCanvas extends Canvas {
       pfd.cGreenBits((byte)8);
       pfd.cBlueBits((byte)8);
       pfd.cDepthBits((byte)24);
+      pfd.cStencilBits((byte)8);
       if (!GDI32.SetPixelFormat(dc, pixelFormat, pfd)) {
         release();
         return null;
@@ -199,6 +201,7 @@ public abstract class GlCanvas extends Canvas {
       set(buf, WGLARBPixelFormat.WGL_PIXEL_TYPE_ARB, WGLARBPixelFormat.WGL_TYPE_RGBA_ARB);
       set(buf, WGLARBPixelFormat.WGL_COLOR_BITS_ARB, 24);
       set(buf, WGLARBPixelFormat.WGL_DEPTH_BITS_ARB, 24);
+      set(buf, WGLARBPixelFormat.WGL_STENCIL_BITS_ARB, 8);
       set(buf, WGLARBPixelFormat.WGL_DOUBLE_BUFFER_ARB, 1);
       set(buf, WGLARBMultisample.WGL_SAMPLE_BUFFERS_ARB, 1);
       set(buf, WGLARBMultisample.WGL_SAMPLES_ARB, 4);
