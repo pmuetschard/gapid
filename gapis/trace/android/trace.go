@@ -449,7 +449,9 @@ func (t *androidTracer) SetupTrace(ctx context.Context, o *service.TraceOptions)
 				match[1], match[3],
 				strings.Join(lines, "\n  "))
 		}
-	} else if o.Type != service.TraceType_Perfetto || len(o.GetUri()) != 0 {
+	}
+
+	if pkg == nil && (o.Type != service.TraceType_Perfetto || len(o.GetUri()) != 0) {
 		return ret, nil, fmt.Errorf("Could not find package matching %s", o.GetUri())
 	}
 
