@@ -349,6 +349,10 @@ func (t *androidTracer) InstallPackage(ctx context.Context, o *service.TraceOpti
 			pkg.Uninstall(ctx)
 		}
 	}
+
+	o.App = &service.TraceOptions_Uri{
+		info.URI(),
+	}
 	return pkg, cleanup, nil
 }
 
