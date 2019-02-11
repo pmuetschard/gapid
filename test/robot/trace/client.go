@@ -155,12 +155,11 @@ func doTrace(ctx context.Context, action string, in *Input, store *stash.Client,
 	params := []string{
 		"trace",
 		"-out", tracefile.System(),
-		"-apk", subject.System(),
 		"-for", traceTime.String(),
 		"-disable-pcs",
 		"-observe-frames", strconv.Itoa(observeEveryNthFrame),
 		"-record-errors",
-		"-gapii-device", d.Instance().Serial,
+		"-serial", d.Instance().Serial,
 		"-api", in.GetHints().GetAPI(),
 	}
 
@@ -176,7 +175,7 @@ func doTrace(ctx context.Context, action string, in *Input, store *stash.Client,
 		}()
 		params = append(params, "-obb", obb.System())
 	}
-	cmd := shell.Command(gapit.System(), params...)
+	cmd := shell.Command(gapit.System(), append(params, "apk:"+subject.System())...)
 	outBuf := &bytes.Buffer{}
 	errBuf := &bytes.Buffer{}
 	outputObj := &Output{}
