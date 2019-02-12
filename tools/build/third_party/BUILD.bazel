@@ -53,3 +53,10 @@ cc_library(
     strip_include_prefix = "SPIRV-Tools-Generated",
     visibility = ["//visibility:public"],
 )
+
+cc_library(
+    name = "libpng-config",
+    hdrs = glob(["libpng/*.h"]),
+    strip_include_prefix = "libpng",
+    visibility = ["//visibility:public"],
+)

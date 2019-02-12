@@ -18,6 +18,7 @@
 load("@gapid//tools/build/rules:repository.bzl", "github_repository", "maybe_repository")
 load("@gapid//tools/build/third_party:jface.bzl", "jface")
 load("@gapid//tools/build/third_party:swt.bzl", "swt")
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 # Defines the repositories for GAPID's Java client's dependencies.
 #  no_maven - if true, none of the maven managed dependencies are initialized.
@@ -188,6 +189,15 @@ def gapic_dependencies(no_maven = False, no_swt = False, no_jface = False, local
             locals = locals,
         )
 
+    maybe_repository(
+        http_archive,
+        name = "libpng",
+        locals = locals,
+        url = "https://download.sourceforge.net/libpng/libpng-1.6.36.tar.gz",
+        sha256 = "ca13c548bde5fb6ff7117cc0bdab38808acb699c0eccb613f0e4697826e1fd7d",
+        strip_prefix = "libpng-1.6.36",
+        build_file = "@gapid//tools/build/third_party:libpng.BUILD",
+    )
 DEFAULT_MAPPINGS = {
     # gRPC
     "io_grpc_context": "@io_grpc_context//jar",
