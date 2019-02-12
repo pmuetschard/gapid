@@ -198,6 +198,18 @@ def gapic_dependencies(no_maven = False, no_swt = False, no_jface = False, local
         strip_prefix = "libpng-1.6.36",
         build_file = "@gapid//tools/build/third_party:libpng.BUILD",
     )
+
+    maybe_repository(
+        github_repository,
+        name = "skia",
+        locals = locals,
+        organization = "google",
+        project = "skia",
+        commit = "fda8139b467c26d85af7de898afb57dca20d80ca",
+        sha256 = "32457482a7b58f89846db25ad8862db00faf5cc34d0b17565b4519d3a8c3b8bf",
+        build_file = "@gapid//tools/build/third_party:skia.BUILD",
+    )
+
 DEFAULT_MAPPINGS = {
     # gRPC
     "io_grpc_context": "@io_grpc_context//jar",
