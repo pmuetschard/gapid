@@ -15,8 +15,6 @@
  */
 package com.google.gapid.perfetto.frontend;
 
-import static com.google.gapid.util.Colors.hsl;
-
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
@@ -37,16 +35,8 @@ public class ColorCache {
     this.device = device;
   }
 
-  public Color get(float h, float s, float l) {
-    return get(hsl(h, s, l));
-  }
 
-  public Color get(int r, int g, int b) {
-    return get(new RGB(r, g, b));
-  }
-
-
-  private Color get(RGB rgb) {
+  public Color get(RGB rgb) {
     try {
       return cache.get(rgb, () -> new Color(device, rgb));
     } catch (ExecutionException e) {
@@ -57,5 +47,4 @@ public class ColorCache {
   public void dispose() {
     cache.invalidateAll();
   }
-
 }

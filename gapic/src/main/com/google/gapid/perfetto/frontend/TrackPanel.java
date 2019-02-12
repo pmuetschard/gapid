@@ -26,6 +26,7 @@ import com.google.gapid.widgets.Theme;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Cursor;
 import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.widgets.Display;
 
 public class TrackPanel implements Panel {
@@ -59,12 +60,11 @@ public class TrackPanel implements Panel {
     Track<?, ?> track = tracks.get(trackId);
     int height = track.getHeight();
 
-    ctx.gc.setForeground(ctx.colors.get(0x3c, 0x4b, 0x5d));
+    ctx.setColor(new RGB(0x3c, 0x4b, 0x5d), new RGB(0xda, 0xda, 0xda));
     ctx.withClip(0, 0, TRACK_SHELL_WIDTH, height, () ->
-      ctx.gc.drawText(track.getTitle(), 10, 5, SWT.DRAW_TRANSPARENT));
+      ctx.drawText(track.getTitle(), 10, 5));
 
-    ctx.gc.setForeground(ctx.colors.get(0xda, 0xda, 0xda));
-    ctx.gc.drawLine(TRACK_SHELL_WIDTH - 1, 0, TRACK_SHELL_WIDTH - 1, height);
+    ctx.drawLine(TRACK_SHELL_WIDTH - 1, 0, TRACK_SHELL_WIDTH - 1, height);
 
     if (buttonVisible) {
       pinButton.renderCanvas(ctx);

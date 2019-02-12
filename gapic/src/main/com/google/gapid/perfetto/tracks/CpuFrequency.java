@@ -20,6 +20,10 @@ import static com.google.gapid.perfetto.common.TimeSpan.fromNs;
 import static com.google.gapid.perfetto.controller.ControllerGlobals.cGlobals;
 import static com.google.gapid.perfetto.frontend.Checkerboard.checkerboardExcept;
 import static com.google.gapid.perfetto.frontend.FrontEndGlobals.feGlobals;
+import static com.google.gapid.perfetto.frontend.RenderContext.Style.Fill;
+import static com.google.gapid.perfetto.frontend.RenderContext.Style.Stroke;
+import static com.google.gapid.perfetto.frontend.RenderContext.Style.StrokeFill;
+import static com.google.gapid.util.Colors.hsl;
 import static com.google.gapid.util.MoreFutures.logFailure;
 import static com.google.gapid.util.MoreFutures.transform;
 import static com.google.gapid.util.MoreFutures.transformAsync;
@@ -37,7 +41,7 @@ import com.google.gapid.perfetto.frontend.TimeScale;
 import com.google.gapid.perfetto.frontend.Track;
 import com.google.gapid.proto.service.Service;
 
-import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.RGB;
 
 import java.util.List;
 import java.util.logging.Logger;
@@ -193,8 +197,8 @@ public class CpuFrequency {
   }
 
   public static class FreqTrack extends Track<Config, Data> {
-    private static final double MARGIN_TOP = 4.5;
-    private static final double RECT_HEIGHT = 30;
+    private static final float MARGIN_TOP = 4.5f;
+    private static final float RECT_HEIGHT = 30;
 
     private boolean reqPending = false;
     private int mouseXpos = 0;
@@ -246,7 +250,7 @@ public class CpuFrequency {
 
       double startPx = timeScale.timeToPx(visibleWindowTime.start);
       double endPx = timeScale.timeToPx(visibleWindowTime.end);
-      double zeroY = MARGIN_TOP + RECT_HEIGHT;
+      float zeroY = MARGIN_TOP + RECT_HEIGHT;
 
       final String[] kUnits = new String[] { "", "K", "M", "G", "T", "E" };
       double exp = Math.ceil(Math.log10(Math.max(data.maximumValue, 1)));
@@ -258,9 +262,8 @@ public class CpuFrequency {
 
       // Draw the CPU frequency graph.
       float hue = Colors.hueForCpu(this.getConfig().cpu);
-      ctx.gc.setBackground(ctx.colors.get(hue, .45f, .7f));
-      ctx.gc.setForeground(ctx.colors.get(hue,  .45f, .55f));
-      ctx.path(path -> {
+      ctx.setColor(hsl(hue, .4f, .55f), hsl(hue, .45f, .7f));
+      ctx.path(StrokeFill, path -> {
         double lastX = startPx, lastY = zeroY;
         path.moveTo((float)lastX, (float)lastY);
         for (int i = 0; i < data.freqKHz.length; i++) {
@@ -281,76 +284,66 @@ public class CpuFrequency {
         double endTime = data.tsEnds[data.freqKHz.length - 1];
         double finalX = Math.floor(timeScale.timeToPx(endTime));
         path.lineTo((float)finalX, (float)lastY);
-        path.lineTo((float)finalX, (float)zeroY);
-        path.lineTo((float)endPx, (float)zeroY);
+        path.lineTo((float)finalX, zeroY);
+        path.lineTo((float)endPx, zeroY);
         path.close();
-        ctx.gc.fillPath(path);
-        ctx.gc.drawPath(path);
       });
 
       // Draw CPU idle rectangles that overlay the CPU freq graph.
-      ctx.gc.setBackground(ctx.colors.get(240, 240, 240));
-      double bottomY = MARGIN_TOP + RECT_HEIGHT;
+      ctx.setColor(null, new RGB(240, 240, 240));
+      float bottomY = MARGIN_TOP + RECT_HEIGHT;
 
       for (int i = 0; i < data.freqKHz.length; i++) {
         if (data.idles[i] >= 0) {
-          double value = data.freqKHz[i];
-          double firstX = Math.floor(timeScale.timeToPx(data.tsStarts[i]));
-          double secondX = Math.floor(timeScale.timeToPx(data.tsEnds[i]));
-          double lastY = zeroY - Math.round((value / yMax) * RECT_HEIGHT);
-          ctx.gc.fillRectangle((int)firstX, (int)bottomY, (int)(secondX - firstX), (int)(lastY - bottomY));
+          float value = data.freqKHz[i];
+          float firstX = (float)Math.floor(timeScale.timeToPx(data.tsStarts[i]));
+          float secondX = (float)Math.floor(timeScale.timeToPx(data.tsEnds[i]));
+          float lastY = zeroY - Math.round((value / yMax) * RECT_HEIGHT);
+          ctx.drawRectangle(Fill, firstX, bottomY, secondX - firstX, lastY - bottomY);
         }
       }
 
       // TS2J: ctx.font = '10px Google Sans';
       if (hoveredValue != null && hoveredTs != null) {
         String text = "freq: " + hoveredValue + "kHz";
-        int width = ctx.gc.textExtent(text).x;
+        int width = ctx.textExtent(text).x;
 
-        ctx.gc.setBackground(ctx.colors.get(hue, .45f, .75f));
-        ctx.gc.setForeground(ctx.colors.get(hue, .45f, .45f));
+        ctx.setColor(hsl(hue, .45f, .45f), hsl(hue, .45f, .75f));
 
         double xStart = Math.floor(timeScale.timeToPx(hoveredTs));
         double xEnd = hoveredTsEnd == null ? endPx : Math.floor(timeScale.timeToPx(hoveredTsEnd));
         double y = zeroY - Math.round((hoveredValue / yMax) * RECT_HEIGHT);
 
         // Highlight line.
-        ctx.gc.setLineWidth(3);
-        ctx.path(path -> {
-          path.moveTo((float)xStart, (float)y);
-          path.lineTo((float)xEnd, (float)y);
-          ctx.gc.setLineWidth(3);
-          ctx.gc.drawPath(path);
-          ctx.gc.setLineWidth(1);
-        });
+        ctx.withLineWidth(3, () ->
+          ctx.path(Stroke, path -> {
+            path.moveTo((float)xStart, (float)y);
+            path.lineTo((float)xEnd, (float)y);
+          }));
 
         // Draw change marker.
-        ctx.path(path -> {
+        ctx.path(StrokeFill, path -> {
           path.addArc((float)xStart, (float)y, 3, 3, 0, 360);
-          ctx.gc.fillPath(path);
-          ctx.gc.drawPath(path);
         });
 
         // Draw the tooltip.
+        ctx.setColor(hsl(200f, .5f, .4f), new RGB(0xff, 0xff, 0xff));
         ctx.withAlpha(.8f, () -> {
-          ctx.gc.setBackground(ctx.systemColor(SWT.COLOR_WHITE));
-          ctx.gc.fillRectangle(mouseXpos + 5, (int)MARGIN_TOP, width + 16, (int)RECT_HEIGHT);
+          ctx.drawRectangle(Fill, mouseXpos + 5, (int)MARGIN_TOP, width + 16, (int)RECT_HEIGHT);
         });
-        ctx.gc.setForeground(ctx.colors.get(200f, .5f, .4f));
-        ctx.gc.drawText(text, mouseXpos + 10, (int)(MARGIN_TOP + RECT_HEIGHT / 2 - 5), SWT.DRAW_TRANSPARENT);
+        ctx.drawText(text, mouseXpos + 10, (MARGIN_TOP + RECT_HEIGHT / 2 - 5));
         if (hoveredIdle != null && hoveredIdle != -1) {
           String idle = "idle: " + (hoveredIdle + 1);
-          ctx.gc.drawText(idle, mouseXpos + 10, (int)(MARGIN_TOP + RECT_HEIGHT / 2 + 5), SWT.DRAW_TRANSPARENT);
+          ctx.drawText(idle, mouseXpos + 10, (MARGIN_TOP + RECT_HEIGHT / 2 + 5));
         }
       }
 
       // Write the Y scale on the top left corner.
+      ctx.setColor(new RGB(0x66, 0x66, 0x66), new RGB(0xff, 0xff, 0xff));
       ctx.withAlpha(.6f, () -> {
-        ctx.gc.setBackground(ctx.systemColor(SWT.COLOR_WHITE));
-        ctx.gc.fillRectangle(0, 0, 40, 16);
+        ctx.drawRectangle(Fill, 0, 0, 40, 16);
       });
-      ctx.gc.setForeground(ctx.colors.get(0x66, 0x66, 0x66));
-      ctx.gc.drawText(yLabel, 5, 3, SWT.DRAW_TRANSPARENT);
+      ctx.drawText(yLabel, 5, 3);
 
       // If the cached trace slices don't fully cover the visible time range,
       // show a gray rectangle with a "Loading..." label.

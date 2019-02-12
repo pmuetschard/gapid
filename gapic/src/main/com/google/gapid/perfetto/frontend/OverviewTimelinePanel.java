@@ -17,13 +17,16 @@ package com.google.gapid.perfetto.frontend;
 
 import static com.google.gapid.perfetto.common.TimeSpan.timeToString;
 import static com.google.gapid.perfetto.frontend.FrontEndGlobals.feGlobals;
+import static com.google.gapid.perfetto.frontend.RenderContext.Style.Fill;
 import static com.google.gapid.perfetto.tracks.Colors.hueForCpu;
+import static com.google.gapid.util.Colors.hsl;
 
 import com.google.gapid.perfetto.common.TimeSpan;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Cursor;
 import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.widgets.Display;
 
 import java.util.List;
@@ -44,11 +47,10 @@ public class OverviewTimelinePanel implements Panel {
 
     // Draw time labels on the top header.
     // TS2J: ctx.font = '10px Google Sans';
-    ctx.gc.setBackground(ctx.colors.get(0x99, 0x99, 0x99));
-    ctx.gc.setForeground(ctx.colors.get(0x99, 0x99, 0x99));
+    ctx.setColor(new RGB(0x99, 0x99, 0x99), new RGB(0x99, 0x99, 0x99));
     for (int i = 0; i < 100; i++) {
-      double xPos = i * width / 100.0;
-      double t = timeScale.pxToTime(xPos);
+      float xPos = i * width / 100.0f;
+      float t = (float)timeScale.pxToTime(xPos);
       if (xPos < 0) {
         continue;
       } else if (xPos > width) {
@@ -56,10 +58,10 @@ public class OverviewTimelinePanel implements Panel {
       }
 
       if (i % 10 == 0) {
-        ctx.gc.fillRectangle((int)xPos, 0, 1, HEADER_HEIGHT - 5);
-        ctx.gc.drawText(timeToString(t - timeScale.getStart()), (int)xPos + 5, 10, SWT.DRAW_TRANSPARENT);
+        ctx.drawRectangle(Fill, xPos, 0, 1, HEADER_HEIGHT - 5);
+        ctx.drawText(timeToString(t - timeScale.getStart()), xPos + 5, 10);
       } else {
-        ctx.gc.fillRectangle((int)xPos, 0, 1, 5);
+        ctx.drawLine(xPos, 0, xPos, 5);
       }
     }
 
@@ -68,43 +70,43 @@ public class OverviewTimelinePanel implements Panel {
     if (!overviewStore.isEmpty()) {
       int numTracks = overviewStore.size();
       int y = 0;
-      double trackHeight = (TRACK_HEIGHT - 2.0) / numTracks;
+      float trackHeight = (TRACK_HEIGHT - 2.0f) / numTracks;
       for (String key : overviewStore.keySet()) {
         List<QuantizedLoad> loads = overviewStore.get(key);
         for (int i = 0; i < loads.size(); i++) {
-          double xStart =  Math.floor(timeScale.timeToPx(loads.get(i).startSec));
-          double xEnd = Math.ceil(timeScale.timeToPx(loads.get(i).endSec));
-          double yOff = Math.floor(HEADER_HEIGHT + y * trackHeight);
+          float xStart =  (float)Math.floor(timeScale.timeToPx(loads.get(i).startSec));
+          float xEnd = (float)Math.ceil(timeScale.timeToPx(loads.get(i).endSec));
+          float yOff = (float)Math.floor(HEADER_HEIGHT + y * trackHeight);
           float lightness = Math.max(0, (float)(1 - loads.get(i).load * 0.7));
-          ctx.gc.setBackground(ctx.colors.get(hueForCpu(y), .5f, lightness));
-          ctx.gc.fillRectangle((int)xStart, (int)yOff, (int)(xEnd - xStart), (int)Math.ceil(trackHeight));
+          ctx.setColor(null, hsl(hueForCpu(y), .5f, lightness));
+          ctx.drawRectangle(Fill, xStart, yOff, xEnd - xStart, (float)Math.ceil(trackHeight));
         }
         y++;
       }
     }
 
     // Draw bottom border.
-    ctx.gc.setBackground(ctx.colors.get(219f, .4f, .5f));
-    ctx.gc.fillRectangle(0, HEADER_HEIGHT + TRACK_HEIGHT - 2, width, 2);
+    ctx.setColor(null, hsl(219f, .4f, .5f));
+    ctx.drawRectangle(Fill, 0, HEADER_HEIGHT + TRACK_HEIGHT - 2, width, 2);
 
     // Draw semi-opaque rects that occlude the non-visible time range.
     TimeSpan vizTime = feGlobals().getFrontendLocalState().visibleWindowTime;
-    double vizStartPx = timeScale.timeToPx(vizTime.start);
-    double vizEndPx = timeScale.timeToPx(vizTime.end);
+    float vizStartPx = (float)timeScale.timeToPx(vizTime.start);
+    float vizEndPx = (float)timeScale.timeToPx(vizTime.end);
 
     ctx.withAlpha(.8f, () -> {
-      ctx.gc.setBackground(ctx.colors.get(200, 200, 200));
-      ctx.gc.fillRectangle(0, HEADER_HEIGHT, (int)vizStartPx, TRACK_HEIGHT);
-      ctx.gc.fillRectangle((int)vizEndPx, HEADER_HEIGHT, (int)(width - vizEndPx), TRACK_HEIGHT);
+      ctx.setColor(null, new RGB(200, 200, 200));
+      ctx.drawRectangle(Fill, 0, HEADER_HEIGHT, vizStartPx, TRACK_HEIGHT);
+      ctx.drawRectangle(Fill, vizEndPx, HEADER_HEIGHT, width - vizEndPx, TRACK_HEIGHT);
     });
 
     // Draw brushes.
     int y = HEADER_HEIGHT + (TRACK_HEIGHT - HANDLE_HEIGHT) / 2;
-    ctx.gc.setBackground(ctx.colors.get(0x33, 0x33, 0x33));
-    ctx.gc.fillRectangle((int)vizStartPx, HEADER_HEIGHT, 1, TRACK_HEIGHT);
-    ctx.gc.fillRectangle((int)vizEndPx, HEADER_HEIGHT, 1, TRACK_HEIGHT);
-    ctx.gc.fillRectangle((int)vizStartPx - HANDLE_WIDTH, y, HANDLE_WIDTH, HANDLE_HEIGHT);
-    ctx.gc.fillRectangle((int)vizEndPx + 1, y, HANDLE_WIDTH, HANDLE_HEIGHT);
+    ctx.setColor(null, new RGB(0x33, 0x33, 0x33));
+    ctx.drawRectangle(Fill, vizStartPx, HEADER_HEIGHT, 1, TRACK_HEIGHT);
+    ctx.drawRectangle(Fill, vizEndPx, HEADER_HEIGHT, 1, TRACK_HEIGHT);
+    ctx.drawRectangle(Fill, vizStartPx - HANDLE_WIDTH, y, HANDLE_WIDTH, HANDLE_HEIGHT);
+    ctx.drawRectangle(Fill, vizEndPx + 1, y, HANDLE_WIDTH, HANDLE_HEIGHT);
   }
 
   @Override

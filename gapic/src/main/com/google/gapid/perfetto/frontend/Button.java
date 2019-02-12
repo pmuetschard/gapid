@@ -43,7 +43,7 @@ public class Button {
     if (!hovered && baseImage == null) {
       return;
     }
-    ctx.gc.drawImage(hovered ? hoveredImage : baseImage, 0, 0, w, h, x, y, w, h);
+    ctx.drawImage(hovered ? hoveredImage : baseImage, 0, 0, w, h, x, y, w, h);
   }
 
   public Hover onMouseMove(int mx, int my) {

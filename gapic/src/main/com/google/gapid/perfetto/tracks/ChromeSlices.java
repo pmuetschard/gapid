@@ -19,6 +19,7 @@ import static com.google.gapid.perfetto.common.TimeSpan.fromNs;
 import static com.google.gapid.perfetto.controller.ControllerGlobals.cGlobals;
 import static com.google.gapid.perfetto.frontend.Checkerboard.checkerboardExcept;
 import static com.google.gapid.perfetto.frontend.FrontEndGlobals.feGlobals;
+import static com.google.gapid.util.Colors.hsl;
 import static com.google.gapid.util.MoreFutures.logFailure;
 import static com.google.gapid.util.MoreFutures.transform;
 import static com.google.gapid.util.MoreFutures.transformAsync;
@@ -32,11 +33,12 @@ import com.google.gapid.perfetto.common.State.TrackState;
 import com.google.gapid.perfetto.common.TimeSpan;
 import com.google.gapid.perfetto.controller.TrackController;
 import com.google.gapid.perfetto.frontend.RenderContext;
+import com.google.gapid.perfetto.frontend.RenderContext.Style;
 import com.google.gapid.perfetto.frontend.TimeScale;
 import com.google.gapid.perfetto.frontend.Track;
 import com.google.gapid.proto.service.Service;
 
-import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.RGB;
 
 import java.util.List;
 import java.util.Map;
@@ -227,8 +229,8 @@ public class ChromeSlices {
       // TS2J: ctx.textAlign = 'center';
 
       // TS2J: really? // measuretext is expensive so we only use it once.
-      double charWidth = ctx.gc.textExtent("abcdefghij").x / 10.0;
-      double pxEnd = timeScale.timeToPx(visibleWindowTime.end);
+      float charWidth = ctx.textExtent("abcdefghij").x / 10.0f;
+      float pxEnd = (float)timeScale.timeToPx(visibleWindowTime.end);
 
       for (int i = 0; i < data.starts.length; i++) {
         double tStart = data.starts[i];
@@ -240,9 +242,9 @@ public class ChromeSlices {
         if (tEnd <= visibleWindowTime.start || tStart >= visibleWindowTime.end) {
           continue;
         }
-        double rectXStart = Math.max(timeScale.timeToPx(tStart), 0);
-        double rectXEnd = Math.min(timeScale.timeToPx(tEnd), pxEnd);
-        double rectWidth = rectXEnd - rectXStart;
+        float rectXStart = Math.max((float)timeScale.timeToPx(tStart), 0);
+        float rectXEnd = Math.min((float)timeScale.timeToPx(tEnd), pxEnd);
+        float rectWidth = rectXEnd - rectXStart;
         if (rectWidth < /*TS2J: 0.1*/ 1) {
           continue;
         }
@@ -251,13 +253,12 @@ public class ChromeSlices {
         boolean hovered = titleId == hoveredTitleId;
         float hue = hash(cat);
         float saturation = Math.min(20 + depth * 10, 70) / 100f;
-        ctx.gc.setBackground(ctx.colors.get(hue, saturation, hovered ? .3f : .65f));
+        ctx.setColor(new RGB(0xff, 0xff, 0xff), hsl(hue, saturation, hovered ? .3f : .65f));
 
-        ctx.gc.fillRectangle((int)rectXStart, rectYStart, (int)rectWidth, SLICE_HEIGHT);
+        ctx.drawRectangle(Style.Fill, rectXStart, rectYStart, rectWidth, SLICE_HEIGHT);
 
-        double nameLength = title.length() * charWidth;
-        ctx.gc.setForeground(ctx.systemColor(SWT.COLOR_WHITE));
-        double maxTextWidth = rectWidth - 15;
+        float nameLength = title.length() * charWidth;
+        float maxTextWidth = rectWidth - 15;
         String displayText = "";
         if (nameLength < maxTextWidth) {
           displayText = title.trim();
@@ -273,9 +274,8 @@ public class ChromeSlices {
         if (!displayText.isEmpty()) {
           // TS2J: double rectXCenter = rectXStart + rectWidth / 2;
           // TS2J: ctx.fillText(displayText, rectXCenter, rectYStart + SLICE_HEIGHT / 2);
-          ctx.gc.drawText(displayText,
-              (int)(rectXStart + (maxTextWidth - nameLength) / 2), rectYStart + SLICE_HEIGHT / 2 - 8,
-              SWT.DRAW_TRANSPARENT);
+          ctx.drawText(displayText,
+              (rectXStart + (maxTextWidth - nameLength) / 2), rectYStart + SLICE_HEIGHT / 2 - 8);
         }
       }
     }

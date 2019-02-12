@@ -15,7 +15,11 @@
  */
 package com.google.gapid.perfetto.frontend;
 
+import static com.google.gapid.perfetto.frontend.RenderContext.Style.Stroke;
+
 import com.google.gapid.perfetto.common.TimeSpan;
+
+import org.eclipse.swt.graphics.RGB;
 
 import java.util.function.DoubleUnaryOperator;
 
@@ -28,10 +32,9 @@ public class GridLines {
     double step = getGridStepSize(timeSpan.getDuration(), desiredSteps);
     double start = Math.round(timeSpan.start / step) * step;
 
-    ctx.gc.setForeground(ctx.colors.get(0xda, 0xda, 0xda));
-    ctx.gc.setLineWidth(1);
+    ctx.setColor(new RGB(0xda, 0xda, 0xda), null);
 
-    ctx.path(path -> {
+    ctx.path(Stroke, path -> {
       for (double sec = start; sec < timeSpan.end; sec += step) {
         int xPos = (int)Math.floor(x.timeToPx(sec));
 
@@ -40,7 +43,6 @@ public class GridLines {
           path.lineTo(xPos, height);
         }
       }
-      ctx.gc.drawPath(path);
     });
   }
 

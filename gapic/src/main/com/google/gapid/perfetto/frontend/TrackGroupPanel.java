@@ -19,14 +19,16 @@ import static com.google.gapid.perfetto.base.Logging.assertExists;
 import static com.google.gapid.perfetto.frontend.FrontEndGlobals.feGlobals;
 import static com.google.gapid.perfetto.frontend.GridLines.drawGridLines;
 import static com.google.gapid.perfetto.frontend.Panel.Hover.redrawIf;
+import static com.google.gapid.perfetto.frontend.RenderContext.Style.Fill;
 import static com.google.gapid.perfetto.frontend.TrackPanel.TRACK_SHELL_WIDTH;
+import static com.google.gapid.util.Colors.hsl;
 
 import com.google.gapid.perfetto.common.Actions;
 import com.google.gapid.perfetto.common.State.TrackGroupState;
 import com.google.gapid.perfetto.frontend.TrackPanel.TrackDragger;
 import com.google.gapid.widgets.Theme;
 
-import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.RGB;
 
 public class TrackGroupPanel implements Panel {
   private static final int TITLE_HEIGHT = 40;
@@ -61,14 +63,13 @@ public class TrackGroupPanel implements Panel {
     TrackGroupState state = getState();
     int height = getHeight();
     if (state.collapsed) {
-      ctx.gc.setBackground(ctx.colors.get(190f, .49f, .97f));
-      ctx.gc.fillRectangle(0, 0, width, height);
-      ctx.gc.setForeground(ctx.colors.get(0x12, 0x12, 0x12));
+      ctx.setColor(new RGB(0x12, 0x12, 0x12), hsl(190f, .49f, .97f));
+      ctx.drawRectangle(Fill, 0, 0, width, height);
       ctx.withClip(0, 0, TRACK_SHELL_WIDTH - 2 * BUTTON_MARGIN - BUTTON_SIZE, height, () ->
-        ctx.gc.drawText(state.name, 5, 10));
+        ctx.drawText(state.name, 5, 10));
 
-      ctx.gc.setForeground(ctx.colors.get(0xda, 0xda, 0xda));
-      ctx.gc.drawLine(TRACK_SHELL_WIDTH - 1, 0, TRACK_SHELL_WIDTH - 1, height);
+      ctx.setColor(new RGB(0xda, 0xda, 0xda), null);
+      ctx.drawLine(TRACK_SHELL_WIDTH - 1, 0, TRACK_SHELL_WIDTH - 1, height);
 
       expandButton.renderCanvas(ctx);
 
@@ -83,11 +84,10 @@ public class TrackGroupPanel implements Panel {
       return;
     }
 
-    ctx.gc.setBackground(ctx.colors.get(215f, .22f, .19f));
-    ctx.gc.fillRectangle(0, 0, width, TITLE_HEIGHT);
-    ctx.gc.setForeground(ctx.systemColor(SWT.COLOR_WHITE));
+    ctx.setColor(new RGB(0xff, 0xff, 0xff), hsl(215f, .22f, .19f));
+    ctx.drawRectangle(Fill, 0, 0, width, TITLE_HEIGHT);
     ctx.withClip(0, 0, TRACK_SHELL_WIDTH - 2 * BUTTON_MARGIN - BUTTON_SIZE, height, () ->
-      ctx.gc.drawText(state.name, 5, 10));
+      ctx.drawText(state.name, 5, 10));
     collapseButton.renderCanvas(ctx);
 
     //ctx.gc.setForeground(ctx.colors.get(0xda, 0xda, 0xda));

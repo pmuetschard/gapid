@@ -15,12 +15,13 @@
  */
 package com.google.gapid.perfetto.frontend;
 
+import org.eclipse.swt.graphics.RGB;
+
 public class LinePanel implements Panel {
   @Override
   public void renderCanvas(RenderContext ctx, int width) {
-    ctx.gc.setForeground(ctx.colors.get(0xda, 0xda, 0xda));
-    ctx.gc.drawLine(0, 0, width, 0);
-
+    ctx.setColor(new RGB(0xda, 0xda, 0xda), null);
+    ctx.drawLine(0, 0, width, 0);
   }
 
   @Override

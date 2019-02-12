@@ -20,8 +20,10 @@ import static com.google.gapid.perfetto.common.TimeSpan.fromNs;
 import static com.google.gapid.perfetto.controller.ControllerGlobals.cGlobals;
 import static com.google.gapid.perfetto.frontend.Checkerboard.checkerboardExcept;
 import static com.google.gapid.perfetto.frontend.FrontEndGlobals.feGlobals;
+import static com.google.gapid.perfetto.frontend.RenderContext.Style.Fill;
 import static com.google.gapid.perfetto.tracks.Colors.colorForThread;
 import static com.google.gapid.perfetto.tracks.Colors.hueForCpu;
+import static com.google.gapid.util.Colors.hsl;
 import static com.google.gapid.util.MoreFutures.logFailure;
 import static com.google.gapid.util.MoreFutures.transform;
 import static com.google.gapid.util.MoreFutures.transformAsync;
@@ -39,7 +41,7 @@ import com.google.gapid.perfetto.frontend.TimeScale;
 import com.google.gapid.perfetto.frontend.Track;
 import com.google.gapid.proto.service.Service;
 
-import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.RGB;
 
 import java.util.List;
 import java.util.logging.Logger;
@@ -307,8 +309,8 @@ public class CpuSlices {
       double startPx = Math.floor(timeScale.timeToPx(visibleWindowTime.start));
       double bottomY = MARGIN_TOP + RECT_HEIGHT;
 
-      ctx.gc.setBackground(ctx.colors.get(hue, .5f, .6f));
-      ctx.path(path -> {
+      ctx.setColor(null, hsl(hue, .5f, .6f));
+      ctx.path(Fill, path -> {
         double lastX = startPx;
         double lastY = bottomY;
 
@@ -325,7 +327,6 @@ public class CpuSlices {
         }
         path.lineTo((float)lastX, (float)bottomY);
         path.close();
-        ctx.gc.fillPath(path);
       });
     }
 
@@ -338,7 +339,7 @@ public class CpuSlices {
       // TS2J: ctx.textAlign = 'center';
       // TS2J: ctx.font = '12px Google Sans';
       // TS2J: really? // measuretext is expensive so we only use it once.
-      double charWidth = ctx.gc.textExtent("dbpqaouk").x / 8.0;
+      float charWidth = ctx.textExtent("dbpqaouk").x / 8.0f;
 
       boolean isHovering = feGlobals().getFrontendLocalState().hoveredUtid != -1;
 
@@ -349,9 +350,9 @@ public class CpuSlices {
         if (tEnd <= visibleWindowTime.start || tStart >= visibleWindowTime.end) {
           continue;
         }
-        double rectStart = timeScale.timeToPx(tStart);
-        double rectEnd = timeScale.timeToPx(tEnd);
-        double rectWidth = rectEnd - rectStart;
+        float rectStart = (float)timeScale.timeToPx(tStart);
+        float rectEnd = (float)timeScale.timeToPx(tEnd);
+        float rectWidth = rectEnd - rectStart;
         if (rectWidth < /*TS2J: 0.1*/ 1) {
           continue;
         }
@@ -388,36 +389,34 @@ public class CpuSlices {
           color = color.adjusted(color.h, color.s - 20, Math.min(color.l + 10,  60));
         }
 
-        ctx.gc.setBackground(color.swt(ctx));
-        ctx.gc.fillRectangle((int)rectStart, MARGIN_TOP, (int)(rectEnd - rectStart), RECT_HEIGHT);
+        ctx.setColor(new RGB(0xff, 0xff, 0xff), color.swt());
+        ctx.drawRectangle(Fill, rectStart, MARGIN_TOP, (rectEnd - rectStart), RECT_HEIGHT);
 
         // Don't render text when we have less than 5px to play with.
         if (rectWidth < 5) {
           continue;
         }
 
-        double maxTextWidth = rectWidth - 4;
+        float maxTextWidth = rectWidth - 4;
         title = cropText(title, charWidth, maxTextWidth);
         subTitle = cropText(subTitle, charWidth, maxTextWidth);
-
-        ctx.gc.setForeground(ctx.systemColor(SWT.COLOR_WHITE));
 
         // TS2J: const rectXCenter = rectStart + rectWidth / 2;
         if (!title.isEmpty()) {
           // TS2J: ctx.font = '12px Google Sans';
           // TS2J: ctx.fillText(title, rectXCenter, MARGIN_TOP + RECT_HEIGHT / 2 - 3);
-          ctx.gc.drawText(title,
-              (int)(rectStart + (maxTextWidth - title.length() * charWidth) / 2),
-              MARGIN_TOP + RECT_HEIGHT / 2 - 13, SWT.DRAW_TRANSPARENT);
+          ctx.drawText(title,
+              (rectStart + (maxTextWidth - title.length() * charWidth) / 2),
+              MARGIN_TOP + RECT_HEIGHT / 2 - 13);
         }
         if (!subTitle.isEmpty()) {
           // TS2J: ctx.font = '10px Google Sans';
           // TS2J: ctx.fillText(subTitle, rectXCenter, MARGIN_TOP + RECT_HEIGHT / 2 + 11);
           String sub = subTitle;
           ctx.withAlpha(.6f, () ->
-            ctx.gc.drawText(sub,
-                (int)(rectStart + (maxTextWidth - sub.length() * charWidth) / 2),
-                MARGIN_TOP + RECT_HEIGHT / 2, SWT.DRAW_TRANSPARENT));
+            ctx.drawText(sub,
+                (rectStart + (maxTextWidth - sub.length() * charWidth) / 2),
+                MARGIN_TOP + RECT_HEIGHT / 2));
         }
       }
 
@@ -433,17 +432,16 @@ public class CpuSlices {
         }
 
         // TS2J: ctx.font = '10px Google Sans';
-        int line1Width = ctx.gc.textExtent(line1).x;
-        int line2Width = ctx.gc.textExtent(line2).x;
+        int line1Width = ctx.textExtent(line1).x;
+        int line2Width = ctx.textExtent(line2).x;
         int width = Math.max(line1Width, line2Width);
 
+        ctx.setColor(hsl(200f, .5f, .4f), new RGB(0xff, 0xff, 0xff));
         ctx.withAlpha(.9f, () -> {
-          ctx.gc.setBackground(ctx.systemColor(SWT.COLOR_WHITE));
-          ctx.gc.fillRectangle(mouseXpos, MARGIN_TOP, width + 16, RECT_HEIGHT);
+          ctx.drawRectangle(Fill, mouseXpos, MARGIN_TOP, width + 16, RECT_HEIGHT);
         });
-        ctx.gc.setForeground(ctx.colors.get(200f, .5f, .4f));
-        ctx.gc.drawText(line1, mouseXpos + 8, 8, SWT.DRAW_TRANSPARENT);
-        ctx.gc.drawText(line2, mouseXpos + 8, 18, SWT.DRAW_TRANSPARENT);
+        ctx.drawText(line1, mouseXpos + 8, 8);
+        ctx.drawText(line2, mouseXpos + 8, 18);
       }
     }
 

@@ -19,6 +19,7 @@ import static com.google.gapid.perfetto.common.TimeSpan.fromNs;
 import static com.google.gapid.perfetto.controller.ControllerGlobals.cGlobals;
 import static com.google.gapid.perfetto.frontend.Checkerboard.checkerboardExcept;
 import static com.google.gapid.perfetto.frontend.FrontEndGlobals.feGlobals;
+import static com.google.gapid.perfetto.frontend.RenderContext.Style.Fill;
 import static com.google.gapid.util.MoreFutures.logFailure;
 import static com.google.gapid.util.MoreFutures.transform;
 import static com.google.gapid.util.MoreFutures.transformAsync;
@@ -36,6 +37,7 @@ import com.google.gapid.perfetto.frontend.RenderContext;
 import com.google.gapid.perfetto.frontend.TimeScale;
 import com.google.gapid.perfetto.frontend.Track;
 import com.google.gapid.proto.service.Service;
+import com.google.gapid.util.Colors;
 
 import java.util.List;
 import java.util.logging.Logger;
@@ -248,8 +250,8 @@ public class ProcessSummary {
       double startPx = Math.floor(timeScale.timeToPx(visibleWindowTime.start));
       double bottomY = MARGIN_TOP + RECT_HEIGHT;
 
-      ctx.gc.setBackground(ctx.colors.get(hue, .5f, .6f));
-      ctx.path(path -> {
+      ctx.setColor(null, Colors.hsl(hue, .5f, .6f));
+      ctx.path(Fill, path -> {
         double lastX = startPx;
         double lastY = bottomY;
 
@@ -266,7 +268,6 @@ public class ProcessSummary {
         }
         path.lineTo((float)lastX, (float)bottomY);
         path.close();
-        ctx.gc.fillPath(path);
       });
     }
   }

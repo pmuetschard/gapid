@@ -17,9 +17,12 @@ package com.google.gapid.perfetto.frontend;
 
 import com.google.common.collect.Lists;
 
-import org.eclipse.swt.graphics.Color;
+import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.GC;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Path;
+import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.graphics.Transform;
 
@@ -27,8 +30,8 @@ import java.util.LinkedList;
 import java.util.function.Consumer;
 
 public class RenderContext {
-  public final ColorCache colors;
-  public final GC gc;
+  private final ColorCache colors;
+  private final GC gc;
 
   private final LinkedList<Transform> transformStack = Lists.newLinkedList();
 
@@ -37,17 +40,70 @@ public class RenderContext {
     this.gc = gc;
   }
 
-  public void path(Consumer<Path> fun) {
-    Path path = new Path(gc.getDevice());
-    try {
-      fun.accept(path);
-    } finally {
-      path.dispose();
+  public boolean needsDrawing(int y, int h) {
+    Rectangle clip = gc.getClipping();
+    return (y + h >= clip.y) && (y < clip.y + clip.height);
+  }
+
+  public Point textExtent(String text) {
+    return gc.textExtent(text);
+  }
+
+  public void setColor(RGB stroke, RGB fill) {
+    if (stroke != null) {
+      gc.setForeground(colors.get(stroke));
+    }
+    if (fill != null) {
+      gc.setBackground(colors.get(fill));
     }
   }
 
-  public Color systemColor(int name) {
-    return gc.getDevice().getSystemColor(name);
+  public void drawLine(float x1, float y1, float x2, float y2) {
+    gc.drawLine((int)x1, (int)y1, (int)x2, (int)y2);
+  }
+
+  public void drawText(String text, float x, float y) {
+    gc.drawText(text, (int)x, (int)y, SWT.DRAW_TRANSPARENT);
+  }
+
+  public void drawRectangle(Style style, float x, float y, float w, float h) {
+    switch (style) {
+      case Stroke:
+        gc.drawRectangle((int)x, (int)y, (int)w, (int)h);
+        break;
+      case Fill:
+        gc.fillRectangle((int)x, (int)y, (int)w, (int)h);
+        break;
+      case StrokeFill:
+        gc.fillRectangle((int)x, (int)y, (int)w, (int)h);
+        gc.drawRectangle((int)x, (int)y, (int)w, (int)h);
+        break;
+    }
+  }
+
+  public void drawImage(Image image, float sx, float sy, float sw, float sh, float dx, float dy, float dw, float dh) {
+    gc.drawImage(image, (int)sx, (int)sy, (int)sw, (int)sh, (int)dx, (int)dy, (int)dw, (int)dh);
+  }
+
+  public void path(Style style, Consumer<Path> fun) {
+    Path path = new Path(gc.getDevice());
+    try {
+      fun.accept(path);
+      switch (style) {
+        case Stroke:
+          gc.drawPath(path);
+          break;
+        case Fill:
+          gc.fillPath(path);
+          break;
+        case StrokeFill:
+          gc.fillPath(path);
+          gc.drawPath(path);
+          break;
+      }
+    } finally {
+      path.dispose();
+    }
   }
 
   public void withTranslation(float x, float y, Runnable run) {
@@ -83,5 +139,29 @@ public class RenderContext {
     } finally {
       gc.setAlpha(current);
     }
+  }
+
+  public void withLineWidth(float w, Runnable run) {
+    int current = gc.getLineWidth();
+    gc.setLineWidth((int)w);
+    try {
+      run.run();
+    } finally {
+      gc.setLineWidth(current);
+    }
+  }
+
+  public void withLineDash(int[] dash, Runnable run) {
+    int[] current = gc.getLineDash();
+    gc.setLineDash(dash);
+    try {
+      run.run();
+    } finally {
+      gc.setLineDash(current);
+    }
+  }
+
+  public static enum Style {
+    Stroke, Fill, StrokeFill,
   }
 }

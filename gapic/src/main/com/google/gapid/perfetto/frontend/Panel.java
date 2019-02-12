@@ -19,7 +19,6 @@ import com.google.common.collect.Sets;
 
 import org.eclipse.swt.graphics.Cursor;
 import org.eclipse.swt.graphics.Point;
-import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Display;
 
 import java.util.Iterator;
@@ -122,19 +121,16 @@ public interface Panel {
 
     @Override
     public void renderCanvas(RenderContext ctx, int width) {
-      Rectangle clip = ctx.gc.getClipping();
       int y = 0;
       for (Panel panel : panels) {
         int h = panel.getHeight();
-        if (y + h >= clip.y && y <= clip.y + clip.height) {
-          ctx.withTranslation(0, y, () -> {
-            ctx.gc.setClipping(0, 0, clip.width, h);
-            panel.renderCanvas(ctx, width);
-          });
+        if (ctx.needsDrawing(y, h)) {
+          ctx.withTranslation(0, y, () ->
+            ctx.withClip(0, 0, width, h, () ->
+              panel.renderCanvas(ctx, width)));
         }
         y += h;
       }
-      ctx.gc.setClipping(clip);
     }
 
     @Override

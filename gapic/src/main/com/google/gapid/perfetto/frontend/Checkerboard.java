@@ -15,6 +15,10 @@
  */
 package com.google.gapid.perfetto.frontend;
 
+import static com.google.gapid.perfetto.frontend.RenderContext.Style.Fill;
+
+import org.eclipse.swt.graphics.RGB;
+
 public class Checkerboard {
   private static final int SLICE_HEIGHT = 32;
   private static final int  TRACK_PADDING = 5;
@@ -25,10 +29,9 @@ public class Checkerboard {
   public static void checkerboard(RenderContext ctx, int leftPx, int rightPx) {
     int widthPx = rightPx - leftPx;
     // TS2J: ctx.font = '12px Google Sans';
-    ctx.gc.setBackground(ctx.colors.get(0xEE, 0xEE, 0xEE));
-    ctx.gc.fillRectangle(leftPx, TRACK_PADDING, widthPx, SLICE_HEIGHT);
-    ctx.gc.setForeground(ctx.colors.get(0x66, 0x66, 0x66));
-    ctx.gc.drawText("loading...", leftPx + widthPx / 2, TRACK_PADDING + SLICE_HEIGHT / 2, widthPx);
+    ctx.setColor(new RGB(0x66, 0x66, 0x66), new RGB(0xEE, 0xEE, 0xEE));
+    ctx.drawRectangle(Fill, leftPx, TRACK_PADDING, widthPx, SLICE_HEIGHT);
+    ctx.drawText("loading...", leftPx + widthPx / 2f, TRACK_PADDING + SLICE_HEIGHT / 2f);
   }
 
   public static void checkerboardExcept(
