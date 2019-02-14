@@ -19,7 +19,8 @@ import static com.google.gapid.perfetto.common.TimeSpan.fromNs;
 import static com.google.gapid.perfetto.controller.ControllerGlobals.cGlobals;
 import static com.google.gapid.perfetto.frontend.Checkerboard.checkerboardExcept;
 import static com.google.gapid.perfetto.frontend.FrontEndGlobals.feGlobals;
-import static com.google.gapid.util.Colors.hsl;
+import static com.google.gapid.skia.RenderContext.Style.Fill;
+import static com.google.gapid.util.Colors.hsla;
 import static com.google.gapid.util.MoreFutures.logFailure;
 import static com.google.gapid.util.MoreFutures.transform;
 import static com.google.gapid.util.MoreFutures.transformAsync;
@@ -32,13 +33,12 @@ import com.google.gapid.perfetto.common.Engine;
 import com.google.gapid.perfetto.common.State.TrackState;
 import com.google.gapid.perfetto.common.TimeSpan;
 import com.google.gapid.perfetto.controller.TrackController;
-import com.google.gapid.perfetto.frontend.RenderContext;
-import com.google.gapid.perfetto.frontend.RenderContext.Style;
 import com.google.gapid.perfetto.frontend.TimeScale;
 import com.google.gapid.perfetto.frontend.Track;
 import com.google.gapid.proto.service.Service;
+import com.google.gapid.skia.RenderContext;
 
-import org.eclipse.swt.graphics.RGB;
+import org.eclipse.swt.graphics.RGBA;
 
 import java.util.List;
 import java.util.Map;
@@ -253,9 +253,9 @@ public class ChromeSlices {
         boolean hovered = titleId == hoveredTitleId;
         float hue = hash(cat);
         float saturation = Math.min(20 + depth * 10, 70) / 100f;
-        ctx.setColor(new RGB(0xff, 0xff, 0xff), hsl(hue, saturation, hovered ? .3f : .65f));
+        ctx.setColor(new RGBA(0xff, 0xff, 0xff, 0xff), hsla(hue, saturation, hovered ? .3f : .65f, 255));
 
-        ctx.drawRectangle(Style.Fill, rectXStart, rectYStart, rectWidth, SLICE_HEIGHT);
+        ctx.drawRectangle(Fill, rectXStart, rectYStart, rectWidth, SLICE_HEIGHT);
 
         float nameLength = title.length() * charWidth;
         float maxTextWidth = rectWidth - 15;

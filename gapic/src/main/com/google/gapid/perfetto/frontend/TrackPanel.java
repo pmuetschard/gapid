@@ -21,12 +21,13 @@ import static com.google.gapid.perfetto.frontend.Panel.Hover.redrawIf;
 
 import com.google.gapid.perfetto.common.Actions;
 import com.google.gapid.perfetto.common.TimeSpan;
+import com.google.gapid.skia.RenderContext;
 import com.google.gapid.widgets.Theme;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Cursor;
 import org.eclipse.swt.graphics.Point;
-import org.eclipse.swt.graphics.RGB;
+import org.eclipse.swt.graphics.RGBA;
 import org.eclipse.swt.widgets.Display;
 
 public class TrackPanel implements Panel {
@@ -60,7 +61,7 @@ public class TrackPanel implements Panel {
     Track<?, ?> track = tracks.get(trackId);
     int height = track.getHeight();
 
-    ctx.setColor(new RGB(0x3c, 0x4b, 0x5d), new RGB(0xda, 0xda, 0xda));
+    ctx.setColor(new RGBA(0x3c, 0x4b, 0x5d, 0xff), new RGBA(0xda, 0xda, 0xda, 0xff));
     ctx.withClip(0, 0, TRACK_SHELL_WIDTH, height, () ->
       ctx.drawText(track.getTitle(), 10, 5));
 

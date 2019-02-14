@@ -20,10 +20,10 @@ import static com.google.gapid.perfetto.common.TimeSpan.fromNs;
 import static com.google.gapid.perfetto.controller.ControllerGlobals.cGlobals;
 import static com.google.gapid.perfetto.frontend.Checkerboard.checkerboardExcept;
 import static com.google.gapid.perfetto.frontend.FrontEndGlobals.feGlobals;
-import static com.google.gapid.perfetto.frontend.RenderContext.Style.Fill;
-import static com.google.gapid.perfetto.frontend.RenderContext.Style.Stroke;
-import static com.google.gapid.perfetto.frontend.RenderContext.Style.StrokeFill;
-import static com.google.gapid.util.Colors.hsl;
+import static com.google.gapid.skia.RenderContext.Style.Fill;
+import static com.google.gapid.skia.RenderContext.Style.Stroke;
+import static com.google.gapid.skia.RenderContext.Style.StrokeFill;
+import static com.google.gapid.util.Colors.hsla;
 import static com.google.gapid.util.MoreFutures.logFailure;
 import static com.google.gapid.util.MoreFutures.transform;
 import static com.google.gapid.util.MoreFutures.transformAsync;
@@ -36,14 +36,13 @@ import com.google.gapid.perfetto.common.Engine;
 import com.google.gapid.perfetto.common.State.TrackState;
 import com.google.gapid.perfetto.common.TimeSpan;
 import com.google.gapid.perfetto.controller.TrackController;
-import com.google.gapid.perfetto.frontend.RenderContext;
-import com.google.gapid.perfetto.frontend.RenderContext.Style;
 import com.google.gapid.perfetto.frontend.TimeScale;
 import com.google.gapid.perfetto.frontend.Track;
 import com.google.gapid.proto.service.Service;
+import com.google.gapid.skia.RenderContext;
 
 import org.eclipse.swt.graphics.Point;
-import org.eclipse.swt.graphics.RGB;
+import org.eclipse.swt.graphics.RGBA;
 
 import java.util.List;
 import java.util.logging.Logger;
@@ -225,9 +224,9 @@ public class Counter {
 
       assertTrue(data.timestamps.length == data.values.length);
 
-      double startPx = timeScale.timeToPx(visibleWindowTime.start);
-      double endPx = timeScale.timeToPx(visibleWindowTime.end);
-      double zeroY = MARGIN_TOP + RECT_HEIGHT / (data.minimumValue < 0 ? 2 : 1);
+      float startPx = (float)timeScale.timeToPx(visibleWindowTime.start);
+      float endPx = (float)timeScale.timeToPx(visibleWindowTime.end);
+      float zeroY = MARGIN_TOP + RECT_HEIGHT / (data.minimumValue < 0 ? 2 : 1);
 
       // Quantize the Y axis to quarters of powers of tens (7.5K, 10K, 12.5K).
       double maxValue = Math.max(data.maxiumValue, 0);
@@ -251,7 +250,7 @@ public class Counter {
       double expCapped = Math.min(Math.max(0, exp - 3), 9);
       float hue = (180 - (float)Math.floor(expCapped * (180 / 6)) + 360) % 360;
 
-      ctx.setColor(hsl(hue, .45f, .45f), hsl(hue, .45f, .45f));
+      ctx.setColor(hsla(hue, .45f, .45f, 255), hsla(hue, .45f, .45f, 255));
       ctx.path(StrokeFill, path -> {
         double lastX = startPx, lastY = zeroY;
         path.moveTo((float)lastX, (float)lastY);
@@ -268,16 +267,16 @@ public class Counter {
           path.lineTo((float)lastX, (float)nextY);
           lastY = nextY;
         }
-        path.lineTo((float)endPx, (float)lastY);
-        path.lineTo((float)endPx, (float)zeroY);
+        path.lineTo(endPx, (float)lastY);
+        path.lineTo(endPx, zeroY);
         path.close();
       });
 
-      ctx.setColor(hsl(hue, 0.1f, 0.15f), null);
+      ctx.setColor(hsla(hue, 0.1f, 0.15f, 255), null);
       ctx.withLineDash(new int[] { 2, 4 }, () ->
-        ctx.path(Style.Stroke, path -> {
-          path.moveTo(0, (float)zeroY);
-          path.lineTo((float)endPx, (float)zeroY);
+        ctx.path(Stroke, path -> {
+          path.moveTo(0, zeroY);
+          path.lineTo(endPx, zeroY);
           path.close();
         }));
 
@@ -288,36 +287,30 @@ public class Counter {
         String text = "value: " + hoveredValue;
         int width = ctx.textExtent(text).x;
 
-        ctx.setColor(hsl(hue, .45f, .45f), hsl(hue, .45f, .75f));
-        double xStart = Math.floor(timeScale.timeToPx(hoveredTs));
-        double xEnd = hoveredTsEnd == null ? endPx : Math.floor(timeScale.timeToPx(hoveredTsEnd));
-        double y = zeroY - Math.round((hoveredValue / yRange) * RECT_HEIGHT);
+        ctx.setColor(hsla(hue, .45f, .45f, 255), hsla(hue, .45f, .75f, 255));
+        float xStart = (float)Math.floor(timeScale.timeToPx(hoveredTs));
+        float xEnd = hoveredTsEnd == null ? endPx : (float)Math.floor(timeScale.timeToPx(hoveredTsEnd));
+        float y = zeroY - Math.round((hoveredValue / yRange) * RECT_HEIGHT);
 
         // Highlight line.
         ctx.withLineWidth(3, () ->
           ctx.path(Stroke, path -> {
-            path.moveTo((float)xStart, (float)y);
-            path.lineTo((float)xEnd, (float)y);
+            path.moveTo(xStart, y);
+            path.lineTo(xEnd, y);
           }));
 
         // Draw change marker.
-        ctx.path(StrokeFill, path -> {
-          path.addArc((float)xStart, (float)y, 3, 3, 0, 360);
-        });
+        ctx.drawCircle(Stroke, xStart, y, 3);
 
         // Draw the tooltip.
-        ctx.setColor(hsl(200f, .5f, .4f), new RGB(0xff, 0xff, 0xff));
-        ctx.withAlpha(.8f, () -> {
-          ctx.drawRectangle(Fill, mouseXpos + 5, MARGIN_TOP, width + 16, RECT_HEIGHT);
-        });
+        ctx.setColor(hsla(200f, .5f, .4f, 255), new RGBA(0xff, 0xff, 0xff, 204));
+        ctx.drawRectangle(Fill, mouseXpos + 5, MARGIN_TOP, width + 16, RECT_HEIGHT);
         ctx.drawText(text, mouseXpos + 8, MARGIN_TOP + RECT_HEIGHT / 2 - 5);
       }
 
       // Write the Y scale on the top left corner.
-      ctx.setColor(new RGB(0x66, 0x66, 0x66), new RGB(0xff, 0xff, 0xff));
-      ctx.withAlpha(.6f, () -> {
-        ctx.drawRectangle(Fill, 0, 0, 40, 16);
-      });
+      ctx.setColor(new RGBA(0x66, 0x66, 0x66, 0xff), new RGBA(0xff, 0xff, 0xff, 153));
+      ctx.drawRectangle(Fill, 0, 0, 40, 16);
       ctx.drawText(yLabel, 5, 3);
 
       checkerboardExcept(ctx,

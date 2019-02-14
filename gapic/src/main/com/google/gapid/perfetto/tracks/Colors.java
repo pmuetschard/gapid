@@ -15,11 +15,11 @@
  */
 package com.google.gapid.perfetto.tracks;
 
-import static com.google.gapid.util.Colors.hsl;
+import static com.google.gapid.util.Colors.hsla;
 
 import com.google.gapid.perfetto.frontend.ThreadDesc;
 
-import org.eclipse.swt.graphics.RGB;
+import org.eclipse.swt.graphics.RGBA;
 
 public class Colors {
   private static final HSL[] MD_PALETTE = new HSL[] {
@@ -88,8 +88,8 @@ public class Colors {
       return new HSL(name, clamp(newH, 0, 360), clamp(newS, 0, 100), clamp(newL, 0, 100));
     }
 
-    public RGB swt() {
-      return hsl(h, s / 100f, l / 100f);
+    public RGBA swt() {
+      return hsla(h, s / 100f, l / 100f, 255);
     }
 
     private static int clamp(int x, int min, int max) {

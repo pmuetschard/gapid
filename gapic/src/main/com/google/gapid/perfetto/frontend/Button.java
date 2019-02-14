@@ -16,6 +16,7 @@
 package com.google.gapid.perfetto.frontend;
 
 import com.google.gapid.perfetto.frontend.Panel.Hover;
+import com.google.gapid.skia.RenderContext;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Cursor;

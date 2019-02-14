@@ -15,9 +15,11 @@
  */
 package com.google.gapid.perfetto.frontend;
 
-import static com.google.gapid.perfetto.frontend.RenderContext.Style.Fill;
+import static com.google.gapid.skia.RenderContext.Style.Fill;
 
-import org.eclipse.swt.graphics.RGB;
+import com.google.gapid.skia.RenderContext;
+
+import org.eclipse.swt.graphics.RGBA;
 
 public class TitlePanel implements Panel {
   private final String title;
@@ -28,7 +30,7 @@ public class TitlePanel implements Panel {
 
   @Override
   public void renderCanvas(RenderContext ctx, int width) {
-    ctx.setColor(new RGB(0x28, 0x32, 0x3e), new RGB(0xc7, 0xd0, 0xdb));
+    ctx.setColor(new RGBA(0x28, 0x32, 0x3e, 0xFF), new RGBA(0xc7, 0xd0, 0xdb, 0xFF));
     ctx.drawRectangle(Fill, 0, 0, width, 28);
     ctx.drawText(title, 5, 5);
   }

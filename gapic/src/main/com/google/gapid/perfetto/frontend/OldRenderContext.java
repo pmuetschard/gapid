@@ -29,13 +29,13 @@ import org.eclipse.swt.graphics.Transform;
 import java.util.LinkedList;
 import java.util.function.Consumer;
 
-public class RenderContext {
+public class OldRenderContext {
   private final ColorCache colors;
   private final GC gc;
 
   private final LinkedList<Transform> transformStack = Lists.newLinkedList();
 
-  public RenderContext(ColorCache colors, GC gc) {
+  public OldRenderContext(ColorCache colors, GC gc) {
     this.colors = colors;
     this.gc = gc;
   }

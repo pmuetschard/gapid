@@ -26,6 +26,7 @@ java_binary(
     visibility = ["//visibility:public"],
     runtime_deps = [
         "//gapic/res",
+        "//gapic/src/cc:skia",
         "//gapic/src/main",
     ],
 )

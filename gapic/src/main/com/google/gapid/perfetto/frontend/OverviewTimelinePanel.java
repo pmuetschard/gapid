@@ -17,16 +17,17 @@ package com.google.gapid.perfetto.frontend;
 
 import static com.google.gapid.perfetto.common.TimeSpan.timeToString;
 import static com.google.gapid.perfetto.frontend.FrontEndGlobals.feGlobals;
-import static com.google.gapid.perfetto.frontend.RenderContext.Style.Fill;
 import static com.google.gapid.perfetto.tracks.Colors.hueForCpu;
-import static com.google.gapid.util.Colors.hsl;
+import static com.google.gapid.skia.RenderContext.Style.Fill;
+import static com.google.gapid.util.Colors.hsla;
 
 import com.google.gapid.perfetto.common.TimeSpan;
+import com.google.gapid.skia.RenderContext;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Cursor;
 import org.eclipse.swt.graphics.Point;
-import org.eclipse.swt.graphics.RGB;
+import org.eclipse.swt.graphics.RGBA;
 import org.eclipse.swt.widgets.Display;
 
 import java.util.List;
@@ -47,7 +48,7 @@ public class OverviewTimelinePanel implements Panel {
 
     // Draw time labels on the top header.
     // TS2J: ctx.font = '10px Google Sans';
-    ctx.setColor(new RGB(0x99, 0x99, 0x99), new RGB(0x99, 0x99, 0x99));
+    ctx.setColor(new RGBA(0x99, 0x99, 0x99, 0xff), new RGBA(0x99, 0x99, 0x99, 0xff));
     for (int i = 0; i < 100; i++) {
       float xPos = i * width / 100.0f;
       float t = (float)timeScale.pxToTime(xPos);
@@ -78,7 +79,7 @@ public class OverviewTimelinePanel implements Panel {
           float xEnd = (float)Math.ceil(timeScale.timeToPx(loads.get(i).endSec));
           float yOff = (float)Math.floor(HEADER_HEIGHT + y * trackHeight);
           float lightness = Math.max(0, (float)(1 - loads.get(i).load * 0.7));
-          ctx.setColor(null, hsl(hueForCpu(y), .5f, lightness));
+          ctx.setColor(null, hsla(hueForCpu(y), .5f, lightness, 255));
           ctx.drawRectangle(Fill, xStart, yOff, xEnd - xStart, (float)Math.ceil(trackHeight));
         }
         y++;
@@ -86,7 +87,7 @@ public class OverviewTimelinePanel implements Panel {
     }
 
     // Draw bottom border.
-    ctx.setColor(null, hsl(219f, .4f, .5f));
+    ctx.setColor(null, hsla(219f, .4f, .5f, 255));
     ctx.drawRectangle(Fill, 0, HEADER_HEIGHT + TRACK_HEIGHT - 2, width, 2);
 
     // Draw semi-opaque rects that occlude the non-visible time range.
@@ -94,15 +95,13 @@ public class OverviewTimelinePanel implements Panel {
     float vizStartPx = (float)timeScale.timeToPx(vizTime.start);
     float vizEndPx = (float)timeScale.timeToPx(vizTime.end);
 
-    ctx.withAlpha(.8f, () -> {
-      ctx.setColor(null, new RGB(200, 200, 200));
-      ctx.drawRectangle(Fill, 0, HEADER_HEIGHT, vizStartPx, TRACK_HEIGHT);
-      ctx.drawRectangle(Fill, vizEndPx, HEADER_HEIGHT, width - vizEndPx, TRACK_HEIGHT);
-    });
+    ctx.setColor(null, new RGBA(200, 200, 200, 204));
+    ctx.drawRectangle(Fill, 0, HEADER_HEIGHT, vizStartPx, TRACK_HEIGHT);
+    ctx.drawRectangle(Fill, vizEndPx, HEADER_HEIGHT, width - vizEndPx, TRACK_HEIGHT);
 
     // Draw brushes.
     int y = HEADER_HEIGHT + (TRACK_HEIGHT - HANDLE_HEIGHT) / 2;
-    ctx.setColor(null, new RGB(0x33, 0x33, 0x33));
+    ctx.setColor(null, new RGBA(0x33, 0x33, 0x33, 0xFF));
     ctx.drawRectangle(Fill, vizStartPx, HEADER_HEIGHT, 1, TRACK_HEIGHT);
     ctx.drawRectangle(Fill, vizEndPx, HEADER_HEIGHT, 1, TRACK_HEIGHT);
     ctx.drawRectangle(Fill, vizStartPx - HANDLE_WIDTH, y, HANDLE_WIDTH, HANDLE_HEIGHT);

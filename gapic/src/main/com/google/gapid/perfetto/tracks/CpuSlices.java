@@ -20,10 +20,10 @@ import static com.google.gapid.perfetto.common.TimeSpan.fromNs;
 import static com.google.gapid.perfetto.controller.ControllerGlobals.cGlobals;
 import static com.google.gapid.perfetto.frontend.Checkerboard.checkerboardExcept;
 import static com.google.gapid.perfetto.frontend.FrontEndGlobals.feGlobals;
-import static com.google.gapid.perfetto.frontend.RenderContext.Style.Fill;
 import static com.google.gapid.perfetto.tracks.Colors.colorForThread;
 import static com.google.gapid.perfetto.tracks.Colors.hueForCpu;
-import static com.google.gapid.util.Colors.hsl;
+import static com.google.gapid.skia.RenderContext.Style.Fill;
+import static com.google.gapid.util.Colors.hsla;
 import static com.google.gapid.util.MoreFutures.logFailure;
 import static com.google.gapid.util.MoreFutures.transform;
 import static com.google.gapid.util.MoreFutures.transformAsync;
@@ -35,13 +35,13 @@ import com.google.gapid.perfetto.common.Engine;
 import com.google.gapid.perfetto.common.State.TrackState;
 import com.google.gapid.perfetto.common.TimeSpan;
 import com.google.gapid.perfetto.controller.TrackController;
-import com.google.gapid.perfetto.frontend.RenderContext;
 import com.google.gapid.perfetto.frontend.ThreadDesc;
 import com.google.gapid.perfetto.frontend.TimeScale;
 import com.google.gapid.perfetto.frontend.Track;
 import com.google.gapid.proto.service.Service;
+import com.google.gapid.skia.RenderContext;
 
-import org.eclipse.swt.graphics.RGB;
+import org.eclipse.swt.graphics.RGBA;
 
 import java.util.List;
 import java.util.logging.Logger;
@@ -309,7 +309,7 @@ public class CpuSlices {
       double startPx = Math.floor(timeScale.timeToPx(visibleWindowTime.start));
       double bottomY = MARGIN_TOP + RECT_HEIGHT;
 
-      ctx.setColor(null, hsl(hue, .5f, .6f));
+      ctx.setColor(null, hsla(hue, .5f, .6f, 255));
       ctx.path(Fill, path -> {
         double lastX = startPx;
         double lastY = bottomY;
@@ -389,7 +389,7 @@ public class CpuSlices {
           color = color.adjusted(color.h, color.s - 20, Math.min(color.l + 10,  60));
         }
 
-        ctx.setColor(new RGB(0xff, 0xff, 0xff), color.swt());
+        ctx.setColor(new RGBA(0xff, 0xff, 0xff, 0xff), color.swt());
         ctx.drawRectangle(Fill, rectStart, MARGIN_TOP, (rectEnd - rectStart), RECT_HEIGHT);
 
         // Don't render text when we have less than 5px to play with.
@@ -413,10 +413,10 @@ public class CpuSlices {
           // TS2J: ctx.font = '10px Google Sans';
           // TS2J: ctx.fillText(subTitle, rectXCenter, MARGIN_TOP + RECT_HEIGHT / 2 + 11);
           String sub = subTitle;
-          ctx.withAlpha(.6f, () ->
+          //ctx.withAlpha(.6f, () ->
             ctx.drawText(sub,
                 (rectStart + (maxTextWidth - sub.length() * charWidth) / 2),
-                MARGIN_TOP + RECT_HEIGHT / 2));
+                MARGIN_TOP + RECT_HEIGHT / 2);
         }
       }
 
@@ -436,10 +436,8 @@ public class CpuSlices {
         int line2Width = ctx.textExtent(line2).x;
         int width = Math.max(line1Width, line2Width);
 
-        ctx.setColor(hsl(200f, .5f, .4f), new RGB(0xff, 0xff, 0xff));
-        ctx.withAlpha(.9f, () -> {
-          ctx.drawRectangle(Fill, mouseXpos, MARGIN_TOP, width + 16, RECT_HEIGHT);
-        });
+        ctx.setColor(hsla(200f, .5f, .4f, 255), new RGBA(0xff, 0xff, 0xff, 229));
+        ctx.drawRectangle(Fill, mouseXpos, MARGIN_TOP, width + 16, RECT_HEIGHT);
         ctx.drawText(line1, mouseXpos + 8, 8);
         ctx.drawText(line2, mouseXpos + 8, 18);
       }

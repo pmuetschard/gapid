@@ -16,15 +16,17 @@
 package com.google.gapid.perfetto.frontend;
 
 import com.google.gapid.perfetto.frontend.Panel.Hover;
+import com.google.gapid.skia.RenderContext;
+import com.google.gapid.skia.SkiaCanvas;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.RGBA;
 import org.eclipse.swt.graphics.Rectangle;
-import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.ScrollBar;
 
-public class PanelCanvas extends Canvas {
+public class PanelCanvas extends SkiaCanvas {
   private final Panel panel;
   private final ScrollBar bar;
   private Point mouseDown = null, dragStart = null;
@@ -36,15 +38,6 @@ public class PanelCanvas extends Canvas {
     this.panel = panel;
     this.bar = getVerticalBar();
 
-    addListener(SWT.Paint, e -> {
-      Rectangle size = getClientArea();
-      e.gc.setBackground(getDisplay().getSystemColor(SWT.COLOR_WHITE));
-      e.gc.fillRectangle(size);
-
-      int offset = bar.isVisible() ? bar.getSelection() : 0;
-      RenderContext ctx = new RenderContext(colorCache, e.gc);
-      ctx.withTranslation(0, -offset, () -> panel.renderCanvas(ctx, size.width));
-    });
     addListener(SWT.MouseDown, e -> {
       if (e.button == 1) {
         mouseDown = new Point(e.x, e.y + getScrollOffset());
@@ -86,6 +79,15 @@ public class PanelCanvas extends Canvas {
 
     addListener(SWT.Resize, e -> updateScrollbar());
     bar.addListener(SWT.Selection, e -> redraw());
+  }
+
+  @Override
+  protected void draw(RenderContext ctx) {
+    Rectangle size = getClientArea();
+    ctx.clear(new RGBA(0xff, 0xff, 0xff, 0xff));
+
+    float offset = bar.isVisible() ? bar.getSelection() : 0;
+    ctx.withTranslation(0, -offset, () -> panel.renderCanvas(ctx, size.width));
   }
 
   private void setHover(Panel.Hover newHover, boolean forceRedraw) {

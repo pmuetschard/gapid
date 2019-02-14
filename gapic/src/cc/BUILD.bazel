@@ -1,0 +1,54 @@
+cc_binary(
+    name = "libgapid_skia.dylib",
+    srcs = [
+        "jni.h",
+        "jni_md.h",
+        "skia.cpp",
+    ],
+    includes = ["."],
+    linkopts = [ ],
+    linkshared = 1,
+    copts = [
+        "-Iexternal/skia/include/c",
+        "-Iexternal/skia/include/codec",
+        "-Iexternal/skia/include/config",
+        "-Iexternal/skia/include/core",
+        "-Iexternal/skia/include/effects",
+        "-Iexternal/skia/include/gpu",
+        "-Iexternal/skia/include/gpu/gl",
+        "-Iexternal/skia/include/pathops",
+        "-Iexternal/skia/include/private",
+        "-Iexternal/skia/include/utils",
+        "-Iexternal/skia/src/codec",
+        "-Iexternal/skia/src/core",
+        "-Iexternal/skia/src/gpu",
+        "-Iexternal/skia/src/gpu/gl",
+        "-Iexternal/skia/src/image",
+        "-Iexternal/skia/src/opts",
+        "-Iexternal/skia/src/sfnt",
+        "-Iexternal/skia/src/shaders",
+        "-Iexternal/skia/src/utils",
+    ],
+    deps = ["@skia//:skia"],
+)
+
+java_library(
+    name = "skia",
+    resource_strip_prefix = "gapic/src/cc/",
+    resources = [":libgapid_skia.dylib"],
+    visibility = ["//visibility:public"],
+)
+
+genrule(
+    name = "copy_jni.h",
+    srcs = ["@bazel_tools//tools/jdk:jni_header"],
+    outs = ["jni.h"],
+    cmd = "cp -f $< $@",
+)
+
+genrule(
+    name = "copy_jni_md.h",
+    srcs = ["@bazel_tools//tools/jdk:jni_md_header-darwin"],
+    outs = ["jni_md.h"],
+    cmd = "cp -f $< $@",
+)

@@ -19,16 +19,17 @@ import static com.google.gapid.perfetto.base.Logging.assertExists;
 import static com.google.gapid.perfetto.frontend.FrontEndGlobals.feGlobals;
 import static com.google.gapid.perfetto.frontend.GridLines.drawGridLines;
 import static com.google.gapid.perfetto.frontend.Panel.Hover.redrawIf;
-import static com.google.gapid.perfetto.frontend.RenderContext.Style.Fill;
 import static com.google.gapid.perfetto.frontend.TrackPanel.TRACK_SHELL_WIDTH;
-import static com.google.gapid.util.Colors.hsl;
+import static com.google.gapid.skia.RenderContext.Style.Fill;
+import static com.google.gapid.util.Colors.hsla;
 
 import com.google.gapid.perfetto.common.Actions;
 import com.google.gapid.perfetto.common.State.TrackGroupState;
 import com.google.gapid.perfetto.frontend.TrackPanel.TrackDragger;
+import com.google.gapid.skia.RenderContext;
 import com.google.gapid.widgets.Theme;
 
-import org.eclipse.swt.graphics.RGB;
+import org.eclipse.swt.graphics.RGBA;
 
 public class TrackGroupPanel implements Panel {
   private static final int TITLE_HEIGHT = 40;
@@ -63,12 +64,12 @@ public class TrackGroupPanel implements Panel {
     TrackGroupState state = getState();
     int height = getHeight();
     if (state.collapsed) {
-      ctx.setColor(new RGB(0x12, 0x12, 0x12), hsl(190f, .49f, .97f));
+      ctx.setColor(new RGBA(0x12, 0x12, 0x12, 0xff), hsla(190f, .49f, .97f, 255));
       ctx.drawRectangle(Fill, 0, 0, width, height);
       ctx.withClip(0, 0, TRACK_SHELL_WIDTH - 2 * BUTTON_MARGIN - BUTTON_SIZE, height, () ->
         ctx.drawText(state.name, 5, 10));
 
-      ctx.setColor(new RGB(0xda, 0xda, 0xda), null);
+      ctx.setColor(new RGBA(0xda, 0xda, 0xda, 0xFF), null);
       ctx.drawLine(TRACK_SHELL_WIDTH - 1, 0, TRACK_SHELL_WIDTH - 1, height);
 
       expandButton.renderCanvas(ctx);
@@ -84,7 +85,7 @@ public class TrackGroupPanel implements Panel {
       return;
     }
 
-    ctx.setColor(new RGB(0xff, 0xff, 0xff), hsl(215f, .22f, .19f));
+    ctx.setColor(new RGBA(0xff, 0xff, 0xff, 0xff), hsla(215f, .22f, .19f, 255));
     ctx.drawRectangle(Fill, 0, 0, width, TITLE_HEIGHT);
     ctx.withClip(0, 0, TRACK_SHELL_WIDTH - 2 * BUTTON_MARGIN - BUTTON_SIZE, height, () ->
       ctx.drawText(state.name, 5, 10));

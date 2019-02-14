@@ -15,11 +15,12 @@
  */
 package com.google.gapid.perfetto.frontend;
 
-import static com.google.gapid.perfetto.frontend.RenderContext.Style.Stroke;
+import static com.google.gapid.skia.RenderContext.Style.Stroke;
 
 import com.google.gapid.perfetto.common.TimeSpan;
+import com.google.gapid.skia.RenderContext;
 
-import org.eclipse.swt.graphics.RGB;
+import org.eclipse.swt.graphics.RGBA;
 
 import java.util.function.DoubleUnaryOperator;
 
@@ -32,7 +33,7 @@ public class GridLines {
     double step = getGridStepSize(timeSpan.getDuration(), desiredSteps);
     double start = Math.round(timeSpan.start / step) * step;
 
-    ctx.setColor(new RGB(0xda, 0xda, 0xda), null);
+    ctx.setColor(new RGBA(0xda, 0xda, 0xda, 0xff), null);
 
     ctx.path(Stroke, path -> {
       for (double sec = start; sec < timeSpan.end; sec += step) {

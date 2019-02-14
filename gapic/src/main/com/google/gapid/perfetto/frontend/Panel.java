@@ -16,6 +16,7 @@
 package com.google.gapid.perfetto.frontend;
 
 import com.google.common.collect.Sets;
+import com.google.gapid.skia.RenderContext;
 
 import org.eclipse.swt.graphics.Cursor;
 import org.eclipse.swt.graphics.Point;
@@ -124,7 +125,7 @@ public interface Panel {
       int y = 0;
       for (Panel panel : panels) {
         int h = panel.getHeight();
-        if (ctx.needsDrawing(y, h)) {
+        if (ctx.needsDrawing(0, y, width, h)) {
           ctx.withTranslation(0, y, () ->
             ctx.withClip(0, 0, width, h, () ->
               panel.renderCanvas(ctx, width)));

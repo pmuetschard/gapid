@@ -19,6 +19,7 @@ import static com.google.gapid.perfetto.frontend.FrontEndGlobals.feGlobals;
 
 import com.google.gapid.perfetto.common.Registry;
 import com.google.gapid.perfetto.common.State.TrackState;
+import com.google.gapid.skia.RenderContext;
 
 import java.util.function.Function;
 

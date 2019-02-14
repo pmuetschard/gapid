@@ -19,12 +19,12 @@ import static com.google.gapid.perfetto.common.TimeSpan.timeToString;
 import static com.google.gapid.perfetto.frontend.FrontEndGlobals.feGlobals;
 import static com.google.gapid.perfetto.frontend.GridLines.DESIRED_PX_PER_STEP;
 import static com.google.gapid.perfetto.frontend.GridLines.getGridStepSize;
-import static com.google.gapid.perfetto.frontend.RenderContext.Style.Fill;
 
 import com.google.gapid.perfetto.common.TimeSpan;
 import com.google.gapid.perfetto.frontend.TrackPanel.TrackDragger;
+import com.google.gapid.skia.RenderContext;
 
-import org.eclipse.swt.graphics.RGB;
+import org.eclipse.swt.graphics.RGBA;
 
 public class TimeAxisPanel implements Panel {
   @Override
@@ -33,7 +33,7 @@ public class TimeAxisPanel implements Panel {
     TimeSpan range = feGlobals().getFrontendLocalState().visibleWindowTime;
     // TS2J: ctx.font = '10px Google Sans';
 
-    ctx.setColor(new RGB(0x99, 0x99, 0x99), new RGB(0x99, 0x99, 0x99));
+    ctx.setColor(new RGBA(0x99, 0x99, 0x99, 0xFF), new RGBA(0x99, 0x99, 0x99, 0xFF));
 
     double desiredSteps = (double)width / DESIRED_PX_PER_STEP;
     double step = getGridStepSize(range.getDuration(), desiredSteps);
@@ -47,7 +47,7 @@ public class TimeAxisPanel implements Panel {
       } else if (xPos > width) {
         break;
       }
-      ctx.drawRectangle(Fill, xPos, 0, 1, 30);
+      ctx.drawLine(xPos, 0, xPos, 30);
       ctx.drawText(timeToString(s - range.start), xPos + 5, 10);
     }
   }
