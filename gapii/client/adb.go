@@ -158,11 +158,17 @@ func Start(ctx context.Context, p *android.InstalledPackage, a *android.Activity
 	// false: Use GPU debug layers provided by the OS.
 	useJDWP := true
 
+	isVulkan := o.APIs&VulkanAPI != uint32(0)
+
 	if true { // TODO: How can we tell if the device supports debug layers?
 		pushSetting("global", "enable_gpu_debug_layers", "1")
 		pushSetting("global", "gpu_debug_app", p.Name)
 		pushSetting("global", "gpu_debug_layer_app", gapidapk.PackageName(abi))
-		pushSetting("global", "gpu_debug_layers_gles", gapidapk.LibGAPIIName)
+		if isVulkan {
+			pushSetting("global", "gpu_debug_layers", "GraphicsSpy")
+		} else {
+			pushSetting("global", "gpu_debug_layers_gles", gapidapk.LibGAPIIName)
+		}
 		useJDWP = false
 	}
 
@@ -172,7 +178,7 @@ func Start(ctx context.Context, p *android.InstalledPackage, a *android.Activity
 	// Don't set up vulkan tracing here, since the loader will not try and load the layer
 	// if we aren't debuggable regardless.
 	var m *flock.Mutex
-	if o.APIs&VulkanAPI != uint32(0) {
+	if useJDWP && isVulkan {
 		m, err = reserveVulkanDevice(ctx, d)
 		if err != nil {
 			return nil, log.Err(ctx, err, "Setting up for tracing Vulkan")
@@ -186,12 +192,13 @@ func Start(ctx context.Context, p *android.InstalledPackage, a *android.Activity
 	}
 
 	if a != nil {
-		log.I(ctx, "Starting activity in debug mode")
 		if useJDWP {
+			log.I(ctx, "Starting activity in debug mode")
 			if err := d.StartActivityForDebug(ctx, *a, additionalArgs...); err != nil {
 				return nil, log.Err(ctx, err, "Starting activity in debug mode")
 			}
 		} else {
+			log.I(ctx, "Starting activity")
 			if err := d.StartActivity(ctx, *a, additionalArgs...); err != nil {
 				return nil, log.Err(ctx, err, "Starting activity")
 			}
