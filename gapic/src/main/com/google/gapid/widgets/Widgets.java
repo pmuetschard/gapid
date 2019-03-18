@@ -26,6 +26,7 @@ import com.google.gapid.models.Models;
 import com.google.gapid.server.Client;
 import com.google.gapid.util.OS;
 import com.google.gapid.views.CommandEditor;
+import com.google.gapid.views.StatusBar;
 
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
@@ -94,19 +95,23 @@ public class Widgets {
   public final CopyPaste copypaste;
   public final LoadingIndicator loading;
   public final CommandEditor editor;
+  public final StatusBar statusBar;
 
-  public Widgets(Theme theme, CopyPaste copypaste, LoadingIndicator loading, CommandEditor editor) {
+  public Widgets(Theme theme, CopyPaste copypaste, LoadingIndicator loading, CommandEditor editor,
+      StatusBar statusBar) {
     this.theme = theme;
     this.copypaste = copypaste;
     this.loading = loading;
     this.editor = editor;
+    this.statusBar = statusBar;
   }
 
-  public static Widgets create(Display display, Theme theme, Client client, Models models) {
+  public static Widgets create(
+      Display display, Theme theme, StatusBar statusBar, Client client, Models models) {
     CopyPaste copypaste = new CopyPaste(display);
     LoadingIndicator loading = new LoadingIndicator(display, theme);
     CommandEditor editor = new CommandEditor(client, models, theme);
-    return new Widgets(theme, copypaste, loading, editor);
+    return new Widgets(theme, copypaste, loading, editor, statusBar);
   }
 
   public void dispose() {
