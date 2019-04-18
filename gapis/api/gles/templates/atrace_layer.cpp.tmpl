@@ -1,0 +1,78 @@
+{{/*
+ * Copyright (C) 2018 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */}}
+
+{{/* ---- Includes ---- */}}
+{{Include "../../templates/cpp_common.tmpl"}}
+
+{{$filename := print (Global "API") "_atrace_layer.cpp" }}
+{{$ | Macro "ATrace" | Reflow 4 | Write $filename}}
+
+{{define "ATrace"}}
+  {{AssertType $ "API"}}
+  {{Template "C++.Copyright"}}
+
+#include "{{Global "API"}}_types.h"
+¶
+#include "core/cc/{{Global "API"}}_ptr_types.h"
+#include "core/cc/target.h" // STDCALL
+
+#include <android/trace.h>
+
+using namespace gapii;
+
+namespace {
+
+typedef void* (*PFNEGLGETNEXTLAYERPROCADDRESS)(void*, const char*);
+
+}  // anonymous namespace
+¶
+extern "C" {«
+  {{range $c := AllCommands $}}
+    {{if not (GetAnnotation $c "synthetic")}}
+      {{$name := Macro "CmdName" $c}}
+      typedef {{Template "C++.ReturnType" $c}} ({{Upper (Global "API")}}_API_PTR *{{Template "C++.FunctionPtrType" $c}})({{Template "C++.CallParameters" $c}});
+      {{Template "C++.FunctionPtrType" $c}} orig_{{$name}};
+      {{Template "C++.ReturnType" $c}} STDCALL atrace_{{$name}}({{Template "C++.CallParameters" $c}}) {
+        ATrace_beginSection("{{$name}}");
+        {{if not (IsVoid $c.Return.Type)}}auto _result_ = {{end}}
+        orig_{{$name}}({{Macro "C++.CallArguments" $c}});
+        ATrace_endSection();
+        {{if not (IsVoid $c.Return.Type)}}return _result_;{{end}}
+      }
+    {{end}}
+  {{end}}
+
+  void AndroidGLESLayer_Initialize(void* layer_id, PFNEGLGETNEXTLAYERPROCADDRESS gnlpa) {
+    {{range $c := AllCommands $}}
+      {{if not (GetAnnotation $c "synthetic")}}
+        {{$name := Macro "CmdName" $c}}
+        orig_{{$name}} = ({{Template "C++.FunctionPtrType" $c}})gnlpa(layer_id, "{{$name}}");
+      {{end}}
+    {{end}}
+  }
+
+  void* AndroidGLESLayer_GetProcAddress(const char* name, void* next) {
+    {{range $c := AllCommands $}}
+      {{if not (GetAnnotation $c "synthetic")}}
+        {{$name := Macro "CmdName" $c}}
+        if (strcmp(name, "{{$name}}") == 0) return (void*)atrace_{{$name}};
+      {{end}}
+    {{end}}
+    return next;
+  }
+»}  // extern "C"
+¶
+{{end}}
