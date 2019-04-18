@@ -481,14 +481,15 @@ func (t *androidTracer) SetupTrace(ctx context.Context, o *service.TraceOptions)
 	}
 
 	var process tracer.Process
+	var traceCleanup app.Cleanup
 	if o.Type == service.TraceType_Perfetto {
-		process, err = perfetto.Start(ctx, t.b, a, o)
+		process, traceCleanup, err = perfetto.Start(ctx, t.b, a, o)
 	} else {
 		log.I(ctx, "Starting with options %+v", tracer.GapiiOptions(o))
-		var gapiiCleanup app.Cleanup
-		process, gapiiCleanup, err = gapii.Start(ctx, pkg, a, tracer.GapiiOptions(o))
-		cleanup = cleanup.Then(gapiiCleanup)
+		process, traceCleanup, err = gapii.Start(ctx, pkg, a, tracer.GapiiOptions(o))
 	}
+	cleanup = cleanup.Then(traceCleanup)
+
 	if err != nil {
 		return ret, cleanup.Invoke(ctx), err
 	}
