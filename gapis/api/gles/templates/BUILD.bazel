@@ -29,3 +29,10 @@ api_template(
     outputs = ["{api}_imports.cpp"],
     template = "api_imports.cpp.tmpl",
 )
+
+api_template(
+    name = "atrace_layer.cpp",
+    includes = ["//gapis/api/templates"],
+    outputs = ["{api}_atrace_layer.cpp"],
+    template = "atrace_layer.cpp.tmpl",
+)

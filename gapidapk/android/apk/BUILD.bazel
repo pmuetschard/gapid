@@ -25,6 +25,7 @@ _NATIVE_LIBRARIES = {
     "gapir": "//cmd/gapir/apk",
     "vulkan_sample": "//cmd/vulkan_sample/apk",
     "GLTimerLayer": "//core/gles/timer_layer/apk",
+    "GLATraceLayer": "//core/gles/atrace_layer/apk",
 }
 
 _NATIVE_BINARIES = {
