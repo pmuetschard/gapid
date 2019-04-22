@@ -99,6 +99,8 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
+import perfetto.protos.PerfettoConfig;
+
 /**
  * Dialogs used for capturing a trace.
  */
@@ -180,10 +182,11 @@ public class TracerDialog {
     }
   }
 
-  protected static void readPerfettoConfig(Service.TraceOptions.Builder options, int durationMs) {
+  public static PerfettoConfig.TraceConfig.Builder readPerfettoConfig(
+      PerfettoConfig.TraceConfig.Builder config, int durationMs) {
     try (Reader in = new InputStreamReader(new FileInputStream(perfettoConfig.get()))) {
-      TextFormat.merge(in, options.getPerfettoConfigBuilder());
-      options.getPerfettoConfigBuilder().setDurationMs(durationMs);
+      TextFormat.merge(in, config);
+      return config.setDurationMs(durationMs);
     } catch (IOException e) {
       // This is temporary, experimental code, so just sort of crash.
       throw new RuntimeException("Failed to read perfetto config from " + perfettoConfig.get(), e);
@@ -689,7 +692,7 @@ public class TracerDialog {
           int duration = frameCount.getSelection() * 1000;
           // TODO: this isn't really unlimitted.
           duration = (duration == 0) ? (int)MINUTES.toMillis(10) : duration;
-          readPerfettoConfig(options, duration);
+          readPerfettoConfig(options.getPerfettoConfigBuilder(), duration);
         }
 
         return new TraceRequest(output, options.build());
