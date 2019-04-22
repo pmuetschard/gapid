@@ -29,6 +29,7 @@ import com.google.gapid.views.FramebufferView;
 import com.google.gapid.views.GeometryView;
 import com.google.gapid.views.LogView;
 import com.google.gapid.views.MemoryView;
+import com.google.gapid.views.PerfettoView;
 import com.google.gapid.views.ReportView;
 import com.google.gapid.views.ShaderView;
 import com.google.gapid.views.StateView;
@@ -292,6 +293,7 @@ public class GraphicsTraceView extends Composite implements MainWindow.MainView 
       Geometry(Location.Center, View.Geometry, "Geometry", GeometryView::new),
       Shaders(Location.Center, View.Shaders, "Shaders", ShaderView::new),
       Report(Location.Center, View.Report, "Report", ReportView::new),
+      Perfetto(Location.Center, View.Perfetto, "Perfetto", PerfettoView::new),
       Log(Location.Center, View.Log, "Log", (p, m, w) -> new LogView(p, w)),
 
       ApiState(Location.Right, View.State, "State", StateView::new),

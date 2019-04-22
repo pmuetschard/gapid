@@ -21,6 +21,7 @@ import static com.google.gapid.util.Logging.throttleLogRpcError;
 import static com.google.gapid.util.MoreFutures.transform;
 import static com.google.gapid.util.MoreFutures.transformAsync;
 import static com.google.gapid.widgets.Widgets.scheduleIfNotDisposed;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.logging.Level.WARNING;
 
 import com.google.common.collect.ImmutableMap;
@@ -35,17 +36,22 @@ import com.google.gapid.perfetto.models.Tracks;
 import com.google.gapid.proto.service.Service;
 import com.google.gapid.proto.service.path.Path;
 import com.google.gapid.rpc.Rpc;
+import com.google.gapid.rpc.Rpc.Result;
 import com.google.gapid.rpc.RpcException;
+import com.google.gapid.rpc.UiErrorCallback;
 import com.google.gapid.rpc.UiErrorCallback.ResultOrError;
 import com.google.gapid.server.Client;
 import com.google.gapid.util.Events;
 import com.google.gapid.util.Loadable;
 import com.google.gapid.views.StatusBar;
+import com.google.gapid.views.TracerDialog;
 
 import org.eclipse.swt.widgets.Shell;
 
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Logger;
+
+import perfetto.protos.PerfettoConfig;
 
 /**
  * Model responsible for querying a Perfetto trace.
@@ -75,6 +81,39 @@ public class Perfetto extends ModelBase<Perfetto.Data, Path.Capture, Loadable.Me
         }
       }
     });
+  }
+
+  public void captureReplay(Path.Capture path, Path.Device device, Path.OverrideConfig overrides) {
+    Rpc.listen(client.get(Path.Any.newBuilder()
+        .setPerfetto(Path.Perfetto.newBuilder()
+            .setCapture(path)
+            .setOverrides(overrides)
+            .setConfig(TracerDialog.readPerfettoConfig(PerfettoConfig.TraceConfig.newBuilder(),
+                (int)MINUTES.toMillis(10))))
+        .build(), device), new UiErrorCallback<Service.Value, Path.Capture, String>(shell, LOG) {
+          @Override
+          protected ResultOrError<Path.Capture, String> onRpcThread(Result<Service.Value> result) {
+            try {
+              return success(result.get().getPath().getCapture());
+            } catch (RpcException e) {
+              return error("Profiler failed: " + e.getMessage());
+            } catch (ExecutionException e) {
+              return error("Profiler failed: " + e.getCause());
+            }
+          }
+
+          @Override
+          protected void onUiThreadSuccess(Path.Capture result) {
+            listeners.fire().onPerfettoLoadingStatus(Loadable.Message.loading("Loading capture..."));
+            load(result, true);
+          }
+
+          @Override
+          protected void onUiThreadError(String error) {
+            listeners.fire().onPerfettoLoaded(Loadable.Message.error(error));
+          }
+    });
+    listeners.fire().onPerfettoLoadingStatus(Loadable.Message.loading("Profiling replay..."));
   }
 
   @Override
