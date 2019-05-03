@@ -137,9 +137,9 @@ cc_library(
         "src/base/paged_memory.cc",
         "src/base/thread_checker.cc",
         "src/base/thread_task_runner.cc",
+        "src/base/temp_file.cc",
         "src/base/time.cc",
         "src/base/unix_socket.cc",
-        "src/base/android_task_runner.cc",
         "src/base/virtual_destructors.cc",
         "src/ipc/buffered_frame_deserializer.cc",
         "src/ipc/client_impl.cc",
@@ -188,7 +188,13 @@ cc_library(
         "src/tracing/ipc/service/consumer_ipc_service.cc",
         "src/tracing/ipc/service/producer_ipc_service.cc",
         "src/tracing/ipc/service/service_ipc_host_impl.cc",
-    ] + glob([
+    ] + select({
+        "@gapid//tools/build:linux": ["src/base/unix_task_runner.cc"],
+        "@gapid//tools/build:windows": ["src/base/unix_task_runner.cc"],
+        "@gapid//tools/build:darwin": ["src/base/unix_task_runner.cc"],
+        # Android
+        "//conditions:default": ["src/base/android_task_runner.cc"],
+    }) + glob([
         "src/ipc/**/*.h",
         "src/tracing/**/*.h",
     ]),
@@ -398,6 +404,7 @@ proto_library(
         "perfetto/trace/ftrace/test_bundle_wrapper.proto",
         "perfetto/trace/ftrace/vmscan.proto",
         "perfetto/trace/ftrace/workqueue.proto",
+        "perfetto/trace/gpu/gpu_slice.proto",
         "perfetto/trace/interned_data/interned_data.proto",
         "perfetto/trace/power/battery_counters.proto",
         "perfetto/trace/power/power_rails.proto",

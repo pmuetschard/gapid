@@ -1,0 +1,15 @@
+{
+  "file_format_version" : "1.0.0",
+  "layer": {
+    "name": "Timing",
+    "type": "GLOBAL",
+    "library_path": "<library>",
+    "api_version" : "1.0.5",
+    "implementation_version" : "1",
+    "description" : "GPU Timing Layer",
+    "functions": {
+      "vkGetDeviceProcAddr": "TimingGetDeviceProcAddr",
+      "vkGetInstanceProcAddr": "TimingGetInstanceProcAddr"
+    }
+  }
+}

@@ -140,7 +140,8 @@ GL_APICALL void GL_APIENTRY glDrawElements_layer(GLenum mode, GLsizei count,
 
 extern "C" {
 
-void AndroidGLESLayer_Initialize(void* layer_id, PFNEGLGETNEXTLAYERPROCADDRESS glpa) {
+void AndroidGLESLayer_Initialize(void* layer_id,
+                                 PFNEGLGETNEXTLAYERPROCADDRESS glpa) {
   GAPID_INFO("InitializeLayer(%p, %p)", layer_id, glpa);
   eglGetCurrentContext_next = reinterpret_cast<PFNEGLGETCURRENTCONTEXT>(
       glpa(layer_id, "eglGetCurrentContext"));
