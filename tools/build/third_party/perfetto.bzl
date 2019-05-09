@@ -17,22 +17,25 @@
 
 PACKAGES = [
     struct(
-        url = "https://android.googlesource.com/platform/external/perfetto/+archive/826c8d4342d321fb921cf6e0704fe482c7a58348.tar.gz",
-        sha = "",
-        strip = "",
+        url = "https://codeload.github.com/pmuetschard/perfetto/zip/6f075567db92506b14531dba229e9857c4943943",
+        sha = "f86d9e8a03a0d6d33fed74c91106683c3264a56ac553ae756de7749de1556a2b",
+        strip = "perfetto-6f075567db92506b14531dba229e9857c4943943",
         out = ".",
+        type = "zip",
     ),
     struct(
         url = "https://storage.googleapis.com/perfetto/sqlite-amalgamation-3250300.zip",
         sha = "2ad5379f3b665b60599492cc8a13ac480ea6d819f91b1ef32ed0e1ad152fafef",
         strip = "sqlite-amalgamation-3250300",
         out = "sqlite",
+        type = "zip",
     ),
     struct(
         url = "https://storage.googleapis.com/perfetto/sqlite-src-3250300.zip",
         sha = "c7922bc840a799481050ee9a76e679462da131adba1814687f05aa5c93766421",
         strip = "sqlite-src-3250300",
         out = "sqlite/src",
+        type = "zip",
     ),
 ]
 
@@ -43,6 +46,7 @@ def _perfetto_impl(ctx):
             output = pkg.out,
             sha256 = pkg.sha,
             stripPrefix = pkg.strip,
+            type = pkg.type,
         )
 
     ctx.symlink(Label("@gapid//tools/build/third_party/perfetto:perfetto.BUILD"), "BUILD.bazel")
