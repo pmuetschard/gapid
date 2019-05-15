@@ -74,7 +74,7 @@ func Start(ctx context.Context, d adb.Device, a *android.ActivityAction, opts *s
 	if a != nil {
 		if android.SupportsLayersViaSystemSettings(d) {
 			log.I(ctx, "Setting up Layer")
-			cleanup, err := android.SetupLayer(ctx, d, a.Package.Name, gapidapk.PackageName(a.Package.ABI), "libGLATraceLayer.so", false)
+			cleanup, err := android.SetupLayers(ctx, d, a.Package.Name, gapidapk.PackageName(a.Package.ABI), "libGLATraceLayer.so", "Timing")
 			if err != nil {
 				return nil, cleanup.Invoke(ctx), log.Err(ctx, err, "Setting up the layer")
 			}
