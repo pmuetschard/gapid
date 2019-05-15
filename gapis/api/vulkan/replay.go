@@ -41,6 +41,7 @@ var (
 	_ = replay.QueryFramebufferAttachment(API{})
 	_ = replay.Support(API{})
 	_ = replay.QueryTimestamps(API{})
+	_ = replay.Profiler(API{})
 )
 
 // GetReplayPriority returns a uint32 representing the preference for
@@ -922,6 +923,21 @@ func (a API) Replay(
 			}
 			profile.Res = append(profile.Res, rr.Result)
 			optimize = false
+			if req.overrides.GetViewportSize() {
+				transforms.Add(minimizeViewport(ctx))
+			}
+			if req.overrides.GetTextureSize() {
+				transforms.Add(minimizeTextures(ctx))
+			}
+			if req.overrides.GetSampling() {
+				transforms.Add(simplifySampling(ctx))
+			}
+			if req.overrides.GetFragmentShader() {
+				transforms.Add(simplifyFragmentShader(ctx))
+			}
+			if req.overrides.GetVertexCount() {
+				transforms.Add(setVertexCountToOne(ctx))
+			}
 		}
 	}
 
