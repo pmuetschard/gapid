@@ -204,10 +204,10 @@ public class GpuQueuePanel extends TrackPanel implements Selectable {
       if (endDepth >= track.getThread().maxDepth) {
         endDepth = Integer.MAX_VALUE;
       }
-      builder.add(Kind.Thread, transform(
+      builder.add(Kind.Gpu, transform(
           ThreadTrack.getSlices(
               state.getQueryEngine(), track.getThread().utid, ts, startDepth, endDepth),
-          ThreadTrack.Slices::new));
+          ThreadTrack.Slices::newGpuSlices));
     }
   }
 }
