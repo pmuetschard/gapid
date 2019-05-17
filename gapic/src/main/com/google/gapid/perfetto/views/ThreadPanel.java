@@ -326,7 +326,7 @@ public class ThreadPanel extends TrackPanel implements Selectable {
       builder.add(Kind.Thread, transform(
           ThreadTrack.getSlices(
               state.getQueryEngine(), track.getThread().utid, ts, startDepth, endDepth),
-          ThreadTrack.Slices::new));
+          ThreadTrack.Slices::newThreadSlices));
     }
   }
 }

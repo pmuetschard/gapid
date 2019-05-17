@@ -397,11 +397,13 @@ public class ThreadTrack extends Track<ThreadTrack.Data> {
   }
 
   public static class Slices implements Selection.CombiningBuilder.Combinable<Slices> {
+    private final String name;
     private final Map<Long, Node.Builder> byStack = Maps.newHashMap();
     private final Map<Long, List<Node.Builder>> byParent = Maps.newHashMap();
     private final Set<Long> roots = Sets.newHashSet();
 
-    public Slices(List<Slice> slices) {
+    private Slices(String name, List<Slice> slices) {
+      this.name = name;
       for (Slice slice : slices) {
         Node.Builder child = byStack.get(slice.id);
         if (child == null) {
@@ -412,6 +414,14 @@ public class ThreadTrack extends Track<ThreadTrack.Data> {
         roots.remove(slice.id);
         child.add(slice.dur);
       }
+    }
+
+    public static Slices newThreadSlices(List<Slice> slices) {
+      return new Slices("Thread Slices", slices);
+    }
+
+    public static Slices newGpuSlices(List<Slice> slices) {
+      return new Slices("GPU Slices", slices);
     }
 
     @Override
@@ -431,7 +441,7 @@ public class ThreadTrack extends Track<ThreadTrack.Data> {
 
     @Override
     public Selection build() {
-      return new Selection(roots.stream()
+      return new Selection(name, roots.stream()
           .filter(not(byStack::containsKey))
           .flatMap(root -> byParent.get(root).stream())
           .map(b -> b.build(byParent))
@@ -440,15 +450,17 @@ public class ThreadTrack extends Track<ThreadTrack.Data> {
     }
 
     public static class Selection implements com.google.gapid.perfetto.models.Selection {
+      private final String name;
       public final ImmutableList<Node> nodes;
 
-      public Selection(ImmutableList<Node> nodes) {
+      public Selection(String name, ImmutableList<Node> nodes) {
+        this.name = name;
         this.nodes = nodes;
       }
 
       @Override
       public String getTitle() {
-        return "Thread Slices";
+        return name;
       }
 
       @Override
