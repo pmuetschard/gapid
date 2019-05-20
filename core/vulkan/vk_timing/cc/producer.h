@@ -19,6 +19,7 @@
 
 namespace timing {
 
+void start_perfetto();
 void send_event(uint32_t pid, uint64_t queue_id, uint32_t queue_idx,
                 int64_t start_ts, int64_t end_ts, const char* label);
 

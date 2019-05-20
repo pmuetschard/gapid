@@ -15,16 +15,11 @@
 load("//tools/build:rules.bzl", "android_dynamic_library", "cc_copts")
 
 cc_library(
-    name = "layer",
-    srcs = [
-        "layer.cpp",
-        "layer.h",
-        "producer.h",
-        "producer_api.cpp",
-        "threading.h",
-        "timing.cpp",
-        "timing.h",
-    ],
+    name = "cc",
+    srcs = glob([
+        "*.cpp",
+        "*.h",
+    ]),
     copts = cc_copts() + select({
         "//tools/build:linux": ["-DVK_USE_PLATFORM_XCB_KHR"],
         "//tools/build:darwin": [],
@@ -34,8 +29,12 @@ cc_library(
     }) + [
         "-fno-rtti",
         "-fno-exceptions",
+        # We always build Perfetto in optimized mode, but a lot of its headers
+        # actually respect this.
+        "-DNDEBUG",
     ],
     linkopts = [
+        "-landroid",
         "-ldl",
         "-llog",
         "-lm",
@@ -44,28 +43,6 @@ cc_library(
     deps = [
         "//core/cc",
         "//core/vulkan/cc/include/vulkan",
-    ],
-)
-
-cc_library(
-    name = "producer",
-    srcs = [
-        "producer.cpp",
-    ],
-    copts = cc_copts() + [
-        "-fno-rtti",
-        "-fno-exceptions",
-        # We always build Perfetto in optimized mode, but a lot of its headers
-        # actually respect this.
-        "-DNDEBUG",
-    ],
-    linkopts = [
-        "-landroid",
-        "-llog",
-        "-lm",
-    ],
-    deps = [
-        "//core/cc",
         "@perfetto//:producer",
     ],
 )
@@ -74,14 +51,7 @@ android_dynamic_library(
     name = "libVkLayer_Timing",
     visibility = ["//visibility:public"],
     exports = "timing_android.exports",
-    deps = [":layer"],
-)
-
-android_dynamic_library(
-    name = "libproducer",
-    visibility = ["//visibility:public"],
-    exports = "producer_android.exports",
-    deps = [":producer"],
+    deps = [":cc"],
 )
 
 filegroup(

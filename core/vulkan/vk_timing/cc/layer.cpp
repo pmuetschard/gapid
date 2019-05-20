@@ -23,6 +23,7 @@
 #include "core/cc/log.h"
 
 #include "layer.h"
+#include "producer.h"
 #include "timing.h"
 
 namespace timing {
@@ -73,6 +74,8 @@ typename link_info_traits<T>::layer_info_type *get_layer_link_info(
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateInstance(
     const VkInstanceCreateInfo *pCreateInfo,
     const VkAllocationCallbacks *pAllocator, VkInstance *pInstance) {
+  start_perfetto();
+
   VkLayerInstanceCreateInfo *layer_info = get_layer_link_info(pCreateInfo);
 
   PFN_vkGetInstanceProcAddr get_instance_proc_addr =

@@ -19,9 +19,3 @@ android_native(
     visibility = ["//visibility:public"],
     deps = ["//core/vulkan/vk_timing/cc:libVkLayer_Timing"],
 )
-
-android_native(
-    name = "producer",
-    visibility = ["//visibility:public"],
-    deps = ["//core/vulkan/vk_timing/cc:libproducer"],
-)

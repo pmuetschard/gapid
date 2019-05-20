@@ -18,8 +18,10 @@
 
 #ifdef TARGET_OS_ANDROID
 #include "perfetto/base/android_task_runner.h"
+using TaskRunner = perfetto::base::AndroidTaskRunner;
 #else
 #include "perfetto/base/unix_task_runner.h"
+using TaskRunner = perfetto::base::UnixTaskRunner;
 #endif
 #include "perfetto/trace/gpu/gpu_slice.pbzero.h"
 #include "perfetto/trace/trace_packet.pbzero.h"
@@ -31,6 +33,9 @@
 #include "perfetto/tracing/ipc/producer_ipc_client.h"
 
 #include "core/cc/log.h"
+#include "core/cc/semaphore.h"
+
+namespace timing {
 
 namespace {
 
@@ -73,7 +78,7 @@ class TimingProducer : public perfetto::Producer {
   void StopDataSource(perfetto::DataSourceInstanceID) override {
     GAPID_INFO("[producer] StopDataSource");
     started = false;
-    writer_.release();
+    writer_.reset();
   }
 
   void Flush(perfetto::FlushRequestID req_id,
@@ -107,6 +112,13 @@ class TimingProducer : public perfetto::Producer {
     }
   }
 
+  void Disconnect() {
+    GAPID_INFO("[producer] Disconnecting.");
+    writer_.reset();
+    endpoint_.reset();
+    started = false;
+  }
+
  private:
   TimingProducer(const TimingProducer&) = delete;
   TimingProducer& operator=(const TimingProducer&) = delete;
@@ -117,48 +129,59 @@ class TimingProducer : public perfetto::Producer {
   bool started;
 };
 
-#ifdef TARGET_OS_ANDROID
-perfetto::base::AndroidTaskRunner* get_task_runner() {
-  static perfetto::base::AndroidTaskRunner task_runner;
-  return &task_runner;
-}
-#else
-perfetto::base::UnixTaskRunner* get_task_runner() {
-  static perfetto::base::UnixTaskRunner task_runner;
-  return &task_runner;
-}
-#endif
+class Perfetto {
+ public:
+  Perfetto() {
+    GAPID_INFO("[producer] Starting perfetto.");
+    core::Semaphore semaphore;
+    thread_ = std::thread([this, &semaphore]() {
+      task_runner_ = new TaskRunner();
+      producer_ = new TimingProducer(task_runner_);
+      producer_->Connect();
+      semaphore.release();
+      task_runner_->Run();
+    });
+    semaphore.acquire();
+  }
 
-TimingProducer* get_producer() {
-  static TimingProducer producer(get_task_runner());
-  return &producer;
-}
+  ~Perfetto() {
+    GAPID_INFO("[producer] Exiting perfetto.");
+    task_runner_->PostTask([=] { producer_->Disconnect(); });
+    task_runner_->Quit();
+    thread_.join();
 
-void perfetto_main() {
-  get_producer()->Connect();
-  get_task_runner()->Run();
-  GAPID_INFO("[producer] Thread exiting.");
-}
+    delete producer_;
+    delete task_runner_;
+  }
 
-__attribute__((constructor)) void _startup() {
-  GAPID_INFO("[producer] Starting thread.");
-  static std::thread thr(perfetto_main);
-  auto handle = thr.native_handle();
-  pthread_setname_np(handle, "PerfettoProd");
+  void sendEvent(uint32_t pid, uint64_t queue_id, uint32_t queue_idx,
+                 int64_t start_ts, int64_t end_ts, const char* label) {
+    char* label_copy = strdup(label);
+    task_runner_->PostTask([=] {
+      producer_->SendEvent(pid, queue_id, queue_idx, start_ts, end_ts,
+                           label_copy);
+      free(label_copy);
+    });
+  }
+
+ private:
+  std::thread thread_;
+  TaskRunner* task_runner_;
+  TimingProducer* producer_;
+};
+
+Perfetto* getPerfetto() {
+  static Perfetto instance;
+  return &instance;
 }
 
 }  // namespace
 
-extern "C" {
+void start_perfetto() { getPerfetto(); }
 
-__attribute__((visibility("default"))) void send_event(
-    uint32_t pid, uint64_t queue_id, uint32_t queue_idx, int64_t start_ts,
-    int64_t end_ts, const char* label) {
-  char* label_copy = strdup(label);
-  get_task_runner()->PostTask([=] {
-    get_producer()->SendEvent(pid, queue_id, queue_idx, start_ts, end_ts,
-                              label_copy);
-    free(label_copy);
-  });
+void send_event(uint32_t pid, uint64_t queue_id, uint32_t queue_idx,
+                int64_t start_ts, int64_t end_ts, const char* label) {
+  getPerfetto()->sendEvent(pid, queue_id, queue_idx, start_ts, end_ts, label);
 }
-}
+
+}  // namespace timing
