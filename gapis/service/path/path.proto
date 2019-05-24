@@ -17,6 +17,7 @@ syntax = "proto3";
 import "core/image/image.proto";
 import "gapis/service/box/box.proto";
 import "gapis/vertex/vertex.proto";
+import "perfetto/config/perfetto_config.proto";
 
 package path;
 option java_package = "com.google.gapid.proto.service.path";
@@ -64,6 +65,8 @@ message Any {
     StateTreeNodeForPath state_tree_node_for_path = 36;
     Stats stats = 37;
     Thumbnail thumbnail = 38;
+
+    Perfetto perfetto = 39;
   }
 }
 
@@ -497,6 +500,12 @@ message OverrideConfig {
   bool vertex_count = 3;
   bool sampling = 4;
   bool texture_size = 5;
+}
+
+message Perfetto {
+  Capture capture = 1;
+  perfetto.protos.TraceConfig config = 2;
+  OverrideConfig overrides = 3;
 }
 
 message ResolveConfig {
