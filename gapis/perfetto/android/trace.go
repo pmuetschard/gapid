@@ -23,11 +23,13 @@ import (
 
 	perfetto_pb "perfetto/config"
 
+	"github.com/google/gapid/core/app"
 	"github.com/google/gapid/core/event/task"
 	"github.com/google/gapid/core/log"
 	"github.com/google/gapid/core/os/android"
 	"github.com/google/gapid/core/os/android/adb"
 	"github.com/google/gapid/core/os/file"
+	"github.com/google/gapid/gapidapk"
 	"github.com/google/gapid/gapis/service"
 )
 
@@ -45,7 +47,7 @@ type Process struct {
 }
 
 // Start optional starts an app and sets up a Perfetto trace
-func Start(ctx context.Context, d adb.Device, a *android.ActivityAction, opts *service.TraceOptions) (*Process, error) {
+func Start(ctx context.Context, d adb.Device, a *android.ActivityAction, opts *service.TraceOptions) (*Process, app.Cleanup, error) {
 	ctx = log.Enter(ctx, "start")
 	if a != nil {
 		ctx = log.V{
@@ -57,15 +59,23 @@ func Start(ctx context.Context, d adb.Device, a *android.ActivityAction, opts *s
 	log.I(ctx, "Unlocking device screen")
 	unlocked, err := d.UnlockScreen(ctx)
 	if err != nil {
-		return nil, log.Err(ctx, err, "Error when trying to unlock device screen")
+		return nil, nil, log.Err(ctx, err, "Error when trying to unlock device screen")
 	}
 	if !unlocked {
-		return nil, log.Err(ctx, nil, "Please unlock your device screen: GAPID can automatically unlock the screen only when no PIN/password/pattern is needed")
+		return nil, nil, log.Err(ctx, nil, "Please unlock your device screen: GAPID can automatically unlock the screen only when no PIN/password/pattern is needed")
 	}
 
+	var cleanup app.Cleanup
 	if a != nil {
+		if android.SupportsLayersViaSystemSettings(d) {
+			log.I(ctx, "Setting up Layer")
+			cleanup, err := android.SetupLayer(ctx, d, a.Package.Name, gapidapk.PackageName(a.Package.ABI), "Timing", true)
+			if err != nil {
+				return nil, cleanup.Invoke(ctx), log.Err(ctx, err, "Setting up the layer")
+			}
+		}
 		if err := d.StartActivity(ctx, *a); err != nil {
-			return nil, log.Err(ctx, err, "Starting the activity")
+			return nil, cleanup.Invoke(ctx), log.Err(ctx, err, "Starting the activity")
 		}
 	}
 
@@ -73,7 +83,7 @@ func Start(ctx context.Context, d adb.Device, a *android.ActivityAction, opts *s
 		device:   d,
 		config:   opts.PerfettoConfig,
 		deferred: opts.DeferStart,
-	}, nil
+	}, cleanup, nil
 }
 
 // Capture starts the perfetto capture.
