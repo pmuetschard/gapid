@@ -323,7 +323,7 @@ public abstract class State {
 
   private void update() {
     nanosPerPx = visibleTime.getDuration() / width;
-    if (nanosPerPx <= 0) {
+    if (nanosPerPx <= 0 || width <= 0) {
       nanosPerPx = 0;
       resolution = 0;
     } else {
